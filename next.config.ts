@@ -40,7 +40,22 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'firebasestorage.googleapis.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
         hostname: 'revistametro.co',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.diario-red.com',
+        pathname: '**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'utopix.cc',
         pathname: '**',
       },
     ],

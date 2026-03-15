@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
@@ -20,6 +21,7 @@ const app = (getApps().length > 0)
 
 const auth = app ? getAuth(app) : null;
 const db = app ? getFirestore(app) : null;
+const storage = app ? getStorage(app) : null;
 const googleProvider = new GoogleAuthProvider();
 
 // Analytics is only supported in a browser environment
@@ -31,4 +33,4 @@ if (typeof window !== "undefined" && app) {
   });
 }
 
-export { app, auth, db, googleProvider };
+export { app, auth, db, storage, googleProvider };
