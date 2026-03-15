@@ -13,20 +13,22 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Initialize Firebase only if API key is present
+const app = (getApps().length > 0) 
+  ? getApp() 
+  : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null);
+
+const auth = app ? getAuth(app) : ({} as any);
+const db = app ? getFirestore(app) : ({} as any);
 const googleProvider = new GoogleAuthProvider();
 
 // Analytics is only supported in a browser environment
-let analytics;
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && app) {
   isSupported().then((supported) => {
     if (supported) {
-      analytics = getAnalytics(app);
+      getAnalytics(app);
     }
   });
 }
 
-export { app, auth, db, googleProvider, analytics };
+export { app, auth, db, googleProvider };
