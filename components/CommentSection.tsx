@@ -8,7 +8,6 @@ import {
   deleteDoc,
   doc,
   query, 
-  where, 
   orderBy, 
   onSnapshot, 
   serverTimestamp,
