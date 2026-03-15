@@ -50,20 +50,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     if (!auth) return;
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      try {
+        await signInWithRedirect(auth, googleProvider);
+      } catch (error) {
+        console.error("Mobile redirect login failed:", error);
+        alert("Error al iniciar sesión en móvil. Revisa tu conexión.");
+      }
+      return;
+    }
+
     try {
-      // First try popup
+      // Desktop: Try popup first
       await signInWithPopup(auth, googleProvider);
     } catch (error: unknown) {
       const authError = error as { code?: string };
-      // If popup is blocked, use redirect
-      if (authError.code === 'auth/popup-blocked' || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+      // If popup is blocked, use redirect as fallback
+      if (authError.code === 'auth/popup-blocked') {
         try {
           await signInWithRedirect(auth, googleProvider);
         } catch (redirectError) {
-          console.error("Redirect login failed:", redirectError);
+          console.error("Redirect login fallback failed:", redirectError);
         }
       } else {
         console.error("Login failed:", error);
+        if (authError.code === 'auth/unauthorized-domain') {
+          alert("Error: Este dominio no está autorizado en Firebase. Añade 'hablar-paja-bc.vercel.app' a Dominios autorizados en la consola de Firebase (Authentication > Settings).");
+        } else {
+          alert("Error al iniciar sesión: " + (authError.code || "Error desconocido"));
+        }
       }
     }
   };
