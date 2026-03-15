@@ -38,7 +38,7 @@ export default function Footer() {
             <a 
               href="https://www.youtube.com/@hablarpajabc05" 
               target="_blank" 
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-red-500 hover:border-red-500/20 hover:bg-red-500/5 transition-all"
+              className="w-10 h-10 rounded-full border border-red-500/20 flex items-center justify-center text-[#FF0000] bg-red-500/5 hover:bg-red-500/10 hover:scale-110 transition-all"
               title="YouTube"
             >
               <BrandIcons.YouTube />
@@ -46,14 +46,14 @@ export default function Footer() {
             <a 
               href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" 
               target="_blank" 
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-green-500 hover:border-green-500/20 hover:bg-green-500/5 transition-all"
+              className="w-10 h-10 rounded-full border border-green-500/20 flex items-center justify-center text-[#1DB954] bg-green-500/5 hover:bg-green-500/10 hover:scale-110 transition-all"
               title="Spotify"
             >
               <BrandIcons.Spotify />
             </a>
             <a 
               href="#" 
-              className="w-10 h-10 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-pink-500 hover:border-pink-500/20 hover:bg-pink-500/5 transition-all"
+              className="w-10 h-10 rounded-full border border-pink-500/20 flex items-center justify-center text-[#E4405F] bg-pink-500/5 hover:bg-pink-500/10 hover:scale-110 transition-all"
               title="Instagram"
             >
               <BrandIcons.Instagram />

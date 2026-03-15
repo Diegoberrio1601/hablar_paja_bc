@@ -5,12 +5,14 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
+import Skeleton from "@/components/Skeleton";
 
 interface FeaturedPost {
   id: string;
   title: string;
   desc: string;
   image: string;
+  category?: string;
   authorName: string;
   date?: string;
 }
@@ -49,7 +51,39 @@ export default function FeaturedSlider() {
     return () => clearInterval(interval);
   }, [posts.length]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <section className="pt-32 pb-16 px-6">
+        <div className="max-w-7xl mx-auto relative group">
+          <div className="bg-muted/20 rounded-[2.5rem] overflow-hidden border border-border flex flex-col lg:flex-row min-h-[500px]">
+            <div className="flex-1 p-8 md:p-16 flex flex-col justify-between">
+              <div>
+                <Skeleton className="h-4 w-24 mb-8" />
+                <Skeleton className="h-12 w-full mb-4" />
+                <Skeleton className="h-12 w-3/4 mb-8" />
+                <Skeleton className="h-6 w-full mb-2" />
+                <Skeleton className="h-6 w-full mb-2" />
+                <Skeleton className="h-6 w-2/3" />
+              </div>
+              <div className="flex items-center justify-between mt-8">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <div>
+                    <Skeleton className="h-4 w-32 mb-2" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </div>
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
+            <div className="flex-1 relative min-h-[350px] lg:min-h-full">
+              <Skeleton className="absolute inset-0 rounded-none" />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
   if (posts.length === 0) return null;
 
   const currentPost = posts[currentIndex];
@@ -60,7 +94,15 @@ export default function FeaturedSlider() {
         <div className="bg-muted/20 rounded-[2.5rem] overflow-hidden border border-border flex flex-col lg:flex-row shadow-sm hover:shadow-md transition-all duration-700 min-h-[500px]">
           <div className="flex-1 p-8 md:p-16 flex flex-col justify-between animate-in fade-in slide-in-from-left-4 duration-700">
             <div>
-              <span className="text-accent text-xs font-bold uppercase tracking-[0.2em] mb-8 block">Destacado</span>
+              <div className="flex items-center gap-3 mb-8">
+                <span className="text-accent text-xs font-bold uppercase tracking-[0.2em]">Destacado</span>
+                {currentPost.category && (
+                  <>
+                    <span className="w-1 h-1 rounded-full bg-border" />
+                    <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-[0.1em]">{currentPost.category}</span>
+                  </>
+                )}
+              </div>
               <h2 className="text-3xl md:text-5xl font-bold mb-8 leading-[1.2] serif line-clamp-2">{currentPost.title}</h2>
               <p className="text-muted-foreground text-lg mb-8 max-w-md leading-relaxed line-clamp-3">{currentPost.desc.replace(/[#*`]/g, '')}</p>
             </div>

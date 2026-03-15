@@ -46,14 +46,27 @@ export default function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 glass px-6 py-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-xl md:text-2xl font-bold tracking-tight serif">Hablar Paja <span className="text-muted-foreground">BC</span></Link>
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative w-10 h-10 md:w-12 md:h-12 overflow-hidden rounded-xl bg-accent/5 p-1 border border-border group-hover:border-accent/30 transition-all duration-500">
+              <Image 
+                src="/hpl.png" 
+                alt="Logo Hablar Paja BC" 
+                width={48} 
+                height={48} 
+                className="object-contain w-full h-full"
+              />
+            </div>
+            <span className="text-xl md:text-2xl font-bold tracking-tight serif">
+              Hablar Paja <span className="text-muted-foreground">BC</span>
+            </span>
+          </Link>
           
           {/* Social Links - Desktop */}
           <div className="hidden lg:flex items-center gap-4 pl-4 border-l border-border">
             <a 
               href="https://www.youtube.com/@hablarpajabc05" 
               target="_blank" 
-              className="text-muted-foreground hover:text-red-500 transition-colors"
+              className="text-[#FF0000] hover:scale-110 transition-transform"
               title="YouTube"
             >
               <BrandIcons.YouTube />
@@ -61,14 +74,14 @@ export default function Navbar() {
             <a 
               href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" 
               target="_blank" 
-              className="text-muted-foreground hover:text-green-500 transition-colors"
+              className="text-[#1DB954] hover:scale-110 transition-transform"
               title="Spotify"
             >
               <BrandIcons.Spotify />
             </a>
             <a 
               href="#" 
-              className="text-muted-foreground hover:text-pink-500 transition-colors"
+              className="text-[#E4405F] hover:scale-110 transition-transform"
               title="Instagram"
             >
               <BrandIcons.Instagram />

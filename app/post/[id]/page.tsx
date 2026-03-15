@@ -10,6 +10,7 @@ import Footer from "@/components/Footer";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import CommentSection from "@/components/CommentSection";
+import { useAuth } from "@/context/AuthContext";
 
 interface Post {
   title: string;
@@ -24,6 +25,7 @@ interface Post {
 export default function PostPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { isAdmin } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -85,6 +87,18 @@ export default function PostPage() {
                 </p>
               </div>
             </div>
+
+            {isAdmin && (
+              <div className="mt-8 flex justify-center">
+                <button 
+                  onClick={() => router.push(`/admin/editar/${id}`)}
+                  className="group flex items-center gap-2 text-xs font-bold uppercase tracking-widest bg-accent text-accent-foreground px-6 py-3 rounded-full shadow-lg hover:translate-y-[-2px] transition-all"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                  Editar esta reseña
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Featured Image */}
