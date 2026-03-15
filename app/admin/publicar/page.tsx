@@ -32,7 +32,7 @@ export default function PublicarPage() {
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "posts"), {
+      await addDoc(collection(db!, "posts"), {
         ...formData,
         authorName: user?.displayName,
         authorPhoto: user?.photoURL,

@@ -29,9 +29,9 @@ export default function PostPage() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id) return;
+      if (!id || !db) return;
       try {
-        const docRef = doc(db, "posts", id as string);
+        const docRef = doc(db!, "posts", id as string);
         const docSnap = await getDoc(docRef);
         
         if (docSnap.exists()) {

@@ -28,8 +28,8 @@ export default function DashboardPage() {
   }, [isAdmin, loading, router]);
 
   useEffect(() => {
-    if (!isAdmin) return;
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    if (!isAdmin || !db) return;
+    const q = query(collection(db!, "posts"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const postsData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -44,7 +44,7 @@ export default function DashboardPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("¿Seguro que quieres borrar esta reseña?")) return;
     try {
-      await deleteDoc(doc(db, "posts", id));
+      await deleteDoc(doc(db!, "posts", id));
     } catch (error) {
       console.error("Error deleting:", error);
     }
@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
   const toggleFeatured = async (id: string, currentStatus: boolean = false) => {
     try {
-      await updateDoc(doc(db, "posts", id), {
+      await updateDoc(doc(db!, "posts", id), {
         isFeatured: !currentStatus
       });
     } catch (error) {

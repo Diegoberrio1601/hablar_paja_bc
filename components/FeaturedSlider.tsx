@@ -21,6 +21,10 @@ export default function FeaturedSlider() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!db) {
+      setTimeout(() => setLoading(false), 0);
+      return;
+    }
     const q = query(collection(db, "posts"), where("isFeatured", "==", true));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const featuredData = snapshot.docs.map(doc => ({

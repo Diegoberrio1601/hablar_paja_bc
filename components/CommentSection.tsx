@@ -49,7 +49,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
         for (const child of children) {
           await deleteRecursive(child.id);
         }
-        await deleteDoc(doc(db, "posts", postId, "comments", id));
+        await deleteDoc(doc(db!, "posts", postId, "comments", id));
       };
 
       await deleteRecursive(commentId);
@@ -59,7 +59,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
   };
 
   useEffect(() => {
-    if (!postId) return;
+    if (!postId || !db) return;
 
     const q = query(
       collection(db, "posts", postId, "comments"),
@@ -86,7 +86,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, "posts", postId, "comments"), {
+      await addDoc(collection(db!, "posts", postId, "comments"), {
         text,
         userId: user.uid,
         userName: user.displayName || "Usuario Anónimo",

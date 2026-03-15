@@ -30,9 +30,9 @@ export default function EditarPage() {
 
   useEffect(() => {
     const fetchPost = async () => {
-      if (!id || !isAdmin) return;
+      if (!id || !isAdmin || !db) return;
       try {
-        const docRef = doc(db, "posts", id as string);
+        const docRef = doc(db!, "posts", id as string);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -60,7 +60,7 @@ export default function EditarPage() {
 
     setIsSubmitting(true);
     try {
-      const docRef = doc(db, "posts", id as string);
+      const docRef = doc(db!, "posts", id as string);
       await updateDoc(docRef, {
         ...formData,
       });

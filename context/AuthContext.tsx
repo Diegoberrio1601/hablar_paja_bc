@@ -27,6 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+      console.warn("Firebase Auth not initialized. Check environment variables.");
+      setTimeout(() => setLoading(false), 0);
+      return;
+    }
+
     // Check for redirect result on mount
     getRedirectResult(auth).catch((error: unknown) => {
       console.error("Redirect auth error:", error);
@@ -43,6 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async () => {
+    if (!auth) return;
     try {
       // First try popup
       await signInWithPopup(auth, googleProvider);
@@ -62,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
     } catch (error) {
