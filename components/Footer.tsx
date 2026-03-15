@@ -1,5 +1,9 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
+import { WhatsAppIcon } from './WhatsAppIcon';
+import { motion } from 'framer-motion';
 
 const BrandIcons = {
   YouTube: () => (
@@ -22,6 +26,12 @@ const BrandIcons = {
 };
 
 export default function Footer() {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <footer className="bg-background px-6 pt-24 pb-12 border-t border-border">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-20 mb-24">
@@ -35,29 +45,34 @@ export default function Footer() {
             Buscamos la esencia de las historias más allá de las páginas.
           </p>
           <div className="flex gap-5">
-            <a 
-              href="https://www.youtube.com/@hablarpajabc05" 
-              target="_blank" 
-              className="w-10 h-10 rounded-full border border-red-500/20 flex items-center justify-center text-[#FF0000] bg-red-500/5 hover:bg-red-500/10 hover:scale-110 transition-all"
-              title="YouTube"
-            >
-              <BrandIcons.YouTube />
-            </a>
-            <a 
-              href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" 
-              target="_blank" 
-              className="w-10 h-10 rounded-full border border-green-500/20 flex items-center justify-center text-[#1DB954] bg-green-500/5 hover:bg-green-500/10 hover:scale-110 transition-all"
-              title="Spotify"
-            >
-              <BrandIcons.Spotify />
-            </a>
-            <a 
-              href="#" 
-              className="w-10 h-10 rounded-full border border-pink-500/20 flex items-center justify-center text-[#E4405F] bg-pink-500/5 hover:bg-pink-500/10 hover:scale-110 transition-all"
-              title="Instagram"
-            >
-              <BrandIcons.Instagram />
-            </a>
+            {mounted && (
+              <>
+                <a 
+                  href="https://www.youtube.com/@hablarpajabc05" 
+                  target="_blank" 
+                  className="w-10 h-10 rounded-full border border-red-500/20 flex items-center justify-center text-[#FF0000] bg-red-500/5 hover:bg-red-500/10 hover:scale-110 transition-all"
+                  title="YouTube"
+                >
+                  <BrandIcons.YouTube />
+                </a>
+                <a 
+                  href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" 
+                  target="_blank" 
+                  className="w-10 h-10 rounded-full border border-green-500/20 flex items-center justify-center text-[#1DB954] bg-green-500/5 hover:bg-green-500/10 hover:scale-110 transition-all"
+                  title="Spotify"
+                >
+                  <BrandIcons.Spotify />
+                </a>
+                <a 
+                  href="https://www.instagram.com/hablarpajabc/" 
+                  target="_blank"
+                  className="w-10 h-10 rounded-full border border-pink-500/20 flex items-center justify-center text-[#E4405F] bg-pink-500/5 hover:bg-pink-500/10 hover:scale-110 transition-all"
+                  title="Instagram"
+                >
+                  <BrandIcons.Instagram />
+                </a>
+              </>
+            )}
           </div>
         </div>
 
@@ -67,13 +82,16 @@ export default function Footer() {
           <p className="text-muted-foreground text-sm leading-relaxed mb-6">
             No solo leemos, conectamos. El club Hablar Paja BC es una comunidad activa con lecturas conjuntas, debates en vivo y podcast semanales.
           </p>
-          <a 
+          <motion.a 
             href="https://chat.whatsapp.com/G99jS3ldw8pBwmZ3VD56Ah?mode=gi_t"
             target="_blank"
-            className="text-accent text-sm font-bold border-b-2 border-accent/20 hover:border-accent pb-1 w-fit transition-all uppercase tracking-widest"
+            className="flex items-center gap-2 text-accent text-sm font-bold border-b-2 border-accent/20 hover:border-[#25D366] hover:text-[#25D366] pb-1 w-fit transition-all uppercase tracking-widest group"
+            whileHover={{ x: 5 }}
+            whileTap={{ scale: 0.95 }}
           >
-            Únete al WhatsApp
-          </a>
+            <WhatsAppIcon size={16} />
+            <span>Únete al WhatsApp</span>
+          </motion.a>
         </div>
       </div>
 

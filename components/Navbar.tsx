@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { WhatsAppIcon } from './WhatsAppIcon';
+import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import ThemeToggle from './ThemeToggle';
@@ -30,9 +32,11 @@ const BrandIcons = {
 export default function Navbar() {
   const { user, isAdmin, login, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setMounted(true);
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
@@ -63,42 +67,51 @@ export default function Navbar() {
           
           {/* Social Links - Desktop */}
           <div className="hidden lg:flex items-center gap-4 pl-4 border-l border-border">
-            <a 
-              href="https://www.youtube.com/@hablarpajabc05" 
-              target="_blank" 
-              className="text-[#FF0000] hover:scale-110 transition-transform"
-              title="YouTube"
-            >
-              <BrandIcons.YouTube />
-            </a>
-            <a 
-              href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" 
-              target="_blank" 
-              className="text-[#1DB954] hover:scale-110 transition-transform"
-              title="Spotify"
-            >
-              <BrandIcons.Spotify />
-            </a>
-            <a 
-              href="#" 
-              className="text-[#E4405F] hover:scale-110 transition-transform"
-              title="Instagram"
-            >
-              <BrandIcons.Instagram />
-            </a>
+            {mounted && (
+              <>
+                <a 
+                  href="https://www.youtube.com/@hablarpajabc05" 
+                  target="_blank" 
+                  className="text-[#FF0000] hover:scale-110 transition-transform"
+                  title="YouTube"
+                >
+                  <BrandIcons.YouTube />
+                </a>
+                <a 
+                  href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" 
+                  target="_blank" 
+                  className="text-[#1DB954] hover:scale-110 transition-transform"
+                  title="Spotify"
+                >
+                  <BrandIcons.Spotify />
+                </a>
+                <a 
+                  href="https://www.instagram.com/hablarpajabc/" 
+                  target="_blank"
+                  className="text-[#E4405F] hover:scale-110 transition-transform"
+                  title="Instagram"
+                >
+                  <BrandIcons.Instagram />
+                </a>
+              </>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-6">
           <div className="hidden md:flex items-center gap-4">
-            <a 
+            <motion.a 
               href="https://chat.whatsapp.com/G99jS3ldw8pBwmZ3VD56Ah?mode=gi_t"
               target="_blank"
-              className="text-xs font-bold uppercase tracking-widest bg-accent/10 text-accent px-5 py-2.5 rounded-full hover:bg-accent hover:text-accent-foreground transition-all flex items-center gap-2"
+              className="text-xs font-bold uppercase tracking-widest bg-accent/10 text-accent px-5 py-2.5 rounded-full transition-all flex items-center gap-2 group hover:bg-[#25D366] hover:text-white"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              <span className="w-2 h-2 bg-accent rounded-full animate-pulse group-hover:bg-accent-foreground"></span>
+              <WhatsAppIcon size={16} />
               Unirme al Club
-            </a>
+            </motion.a>
           </div>
 
           <ThemeToggle />

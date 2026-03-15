@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { Users, Mic2, MessageSquareText } from 'lucide-react';
+import { WhatsAppIcon } from './WhatsAppIcon';
+import { motion } from 'framer-motion';
 
 export default function ClubSection() {
   return (
@@ -43,15 +45,27 @@ export default function ClubSection() {
               </div>
             </div>
 
-            <div className="pt-8">
-              <a 
+            <motion.div 
+              className="pt-8"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <motion.a 
                 href="https://chat.whatsapp.com/G99jS3ldw8pBwmZ3VD56Ah?mode=gi_t" 
                 target="_blank"
-                className="inline-block bg-accent text-accent-foreground px-12 py-5 rounded-full font-bold shadow-2xl hover:translate-y-[-4px] hover:shadow-2xl transition-all text-lg"
+                className="inline-flex items-center gap-3 bg-accent text-accent-foreground px-12 py-5 rounded-full font-bold shadow-2xl transition-all text-lg group hover:bg-[#25D366] hover:text-white"
+                whileHover={{ 
+                  scale: 1.05,
+                  translateY: -4,
+                  boxShadow: "0 25px 50px -12px rgba(37, 211, 102, 0.5)"
+                }}
+                whileTap={{ scale: 0.95 }}
               >
-                Quiero unirme ahora
-              </a>
-            </div>
+                <WhatsAppIcon />
+                <span>Quiero unirme ahora</span>
+              </motion.a>
+            </motion.div>
           </div>
         </div>
       </div>

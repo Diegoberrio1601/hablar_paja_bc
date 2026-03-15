@@ -14,6 +14,7 @@ interface FeaturedPost {
   image: string;
   category?: string;
   authorName: string;
+  authorPhoto?: string;
   date?: string;
 }
 
@@ -109,9 +110,19 @@ export default function FeaturedSlider() {
             
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/10 flex items-center justify-center text-accent text-[10px] font-bold">
-                  {currentPost.authorName.charAt(0)}
-                </div>
+                {currentPost.authorPhoto ? (
+                  <Image 
+                    src={currentPost.authorPhoto} 
+                    alt={currentPost.authorName} 
+                    width={40} 
+                    height={40} 
+                    className="rounded-full border border-border"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/10 flex items-center justify-center text-accent text-[10px] font-bold">
+                    {currentPost.authorName.charAt(0)}
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-bold">{currentPost.authorName}</p>
                   <p className="text-xs text-muted-foreground">{currentPost.date}</p>
