@@ -98,6 +98,13 @@ export default function AdminLibrary() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link 
+                        href={`/admin/biblioteca/editar/${book.id}`}
+                        className="p-2 text-accent hover:bg-accent/10 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <Edit3 size={16} />
+                      </Link>
                       <button 
                         onClick={() => handleDelete(book.id)}
                         className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"

@@ -6,14 +6,13 @@ import Footer from '@/components/Footer';
 import LibraryGrid from '@/components/LibraryGrid';
 import { motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
-import AnimatedBackground from '@/components/AnimatedBackground';
+
 
 export default function BibliotecaPage() {
   return (
-    <main className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <main className="min-h-screen text-foreground relative overflow-hidden">
       <Navbar />
 
-      <AnimatedBackground />
       
       {/* Hero Section */}
       <section className="pt-40 pb-24 px-6 relative overflow-hidden">

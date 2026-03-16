@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/context/AuthContext";
 import Toaster from "@/components/Toaster";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -62,7 +63,12 @@ export default function RootLayout({
       <body className={`${inter.variable} ${playfair.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
-            {children}
+            <div className="relative min-h-screen">
+              <AnimatedBackground />
+              <div className="relative z-10">
+                {children}
+              </div>
+            </div>
             <Toaster />
           </AuthProvider>
         </ThemeProvider>

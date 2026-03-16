@@ -35,8 +35,13 @@
   --font-serif: var(--font-serif);
 }
 
-* {
-  transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+/* transitions are applied selectively to avoid performance issues */
+a, button, input, [role="button"] {
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
@@ -52,8 +57,9 @@ h1, h2, h3, h4, .serif {
 }
 
 .glass {
-  background: rgba(var(--background), 0.8);
-  backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--background), transparent 30%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
 

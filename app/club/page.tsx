@@ -3,7 +3,6 @@
 import React from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import AnimatedBackground from "@/components/AnimatedBackground";
 import { 
   Play 
 } from "lucide-react";
@@ -35,9 +34,8 @@ const BrandIcons = {
 
 export default function ClubPage() {
   return (
-    <main className="min-h-screen bg-background text-foreground relative overflow-hidden">
+    <main className="min-h-screen text-foreground relative overflow-hidden">
       <Navbar />
-      <AnimatedBackground />
 
       {/* Hero Section - Simplified */}
       <section className="pt-40 pb-20 px-6 text-center relative overflow-hidden">

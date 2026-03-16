@@ -48,10 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
   const login = async () => {
-    if (!auth) return;
+    if (!auth || isAuthenticating) return;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    setIsAuthenticating(true);
 
     if (isMobile) {
       try {
@@ -59,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Mobile redirect login failed:", error);
         alert("Error al iniciar sesión en móvil. Revisa tu conexión.");
+        setIsAuthenticating(false);
       }
       return;
     }
@@ -68,6 +72,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await signInWithPopup(auth, googleProvider);
     } catch (error: unknown) {
       const authError = error as { code?: string };
+      
+      // Handle benign cancellation errors silenty
+      if (authError.code === 'auth/cancelled-popup-request' || 
+          authError.code === 'auth/popup-closed-by-user') {
+        console.log("Login cancelled by user or multiple requests.");
+        return;
+      }
+
       // If popup is blocked, use redirect as fallback
       if (authError.code === 'auth/popup-blocked') {
         try {
@@ -83,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           alert("Error al iniciar sesión: " + (authError.code || "Error desconocido"));
         }
       }
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
