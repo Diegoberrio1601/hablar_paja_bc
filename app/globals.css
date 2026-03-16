@@ -57,6 +57,7 @@ h1, h2, h3, h4, .serif {
 }
 
 .glass {
+  background: var(--background); /* Fallback for older browsers */
   background: color-mix(in srgb, var(--background), transparent 30%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
