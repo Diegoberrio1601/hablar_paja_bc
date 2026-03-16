@@ -310,7 +310,58 @@ export default function DashboardPage() {
           }
         }
         toast.success(`Importación finalizada`, {
-          description: `${added} libros añadidos, ${skipped} omitidos por existir previamente.`
+          description: `${added} libros añadidos, ${skipped} omitidas por existir previamente.`
+        });
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  const handleImportUsers = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event: any) => {
+        const text = event.target.result;
+        const data = parseCSV(text);
+        if (data.length === 0) return;
+
+        let added = 0;
+        let skipped = 0;
+
+        for (const item of data) {
+          const email = item['Email'];
+          if (!email) continue;
+
+          // Duplicate check
+          const exists = users.some(u => u.email.toLowerCase() === email.toLowerCase());
+          if (exists) {
+            skipped++;
+            continue;
+          }
+
+          try {
+            await addDoc(collection(db!, "users"), {
+              displayName: item['Nombre'] || 'Usuario Importado',
+              email: email,
+              photoURL: "",
+              isBanned: item['Estado'] === 'Banneado',
+              lastLogin: serverTimestamp(),
+              createdAt: serverTimestamp()
+            });
+            added++;
+          } catch (err) {
+            console.error("Error importing user:", err);
+          }
+        }
+        toast.success(`Importación finalizada`, {
+          description: `${added} usuarios añadidos, ${skipped} omitidas por existir previamente.`
         });
       };
       reader.readAsText(file);
@@ -577,23 +628,29 @@ export default function DashboardPage() {
           {/* Posts Tab */}
           {activeTab === "posts" && (
             <div className="animate-in fade-in duration-500">
-              <div className="p-8 border-b border-border flex justify-between items-center">
-                <h3 className="font-bold serif text-xl">Gestión de Reseñas</h3>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={handleImportPosts}
-                    className="p-2.5 text-accent hover:bg-accent/5 rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-accent/20"
-                  >
-                    <Upload size={16} /> Importar CSV
-                  </button>
-                  <button 
-                    onClick={handleExportPosts}
-                    className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-border/50"
-                  >
-                    <Download size={16} /> Exportar CSV
-                  </button>
-                  <Link href="/admin/publicar" className="bg-accent text-accent-foreground px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-[1.02] transition-all shadow-lg shadow-accent/10">
-                    <PlusCircle size={16} /> Crear Reseña
+              <div className="p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                  <h3 className="font-bold serif text-2xl mb-1">Gestión de Reseñas</h3>
+                  <p className="text-xs text-muted-foreground font-medium">Administra y organiza tus publicaciones literarias</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50">
+                    <button 
+                      onClick={handleImportPosts}
+                      className="px-4 py-2 text-accent hover:bg-accent/10 rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                    >
+                      <Upload size={14} /> Importar
+                    </button>
+                    <div className="w-[1px] bg-border/50 my-1 mx-1" />
+                    <button 
+                      onClick={handleExportPosts}
+                      className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                    >
+                      <Download size={14} /> Exportar
+                    </button>
+                  </div>
+                  <Link href="/admin/publicar" className="bg-accent text-accent-foreground px-5 py-3 rounded-xl text-xs font-black flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-accent/20">
+                    <PlusCircle size={16} /> NUEVA RESEÑA
                   </Link>
                 </div>
               </div>
@@ -639,23 +696,29 @@ export default function DashboardPage() {
           {/* Library Tab */}
           {activeTab === "library" && (
             <div className="animate-in fade-in duration-500">
-              <div className="p-8 border-b border-border flex justify-between items-center">
-                <h3 className="font-bold serif text-xl">Gestión de Biblioteca</h3>
-                <div className="flex gap-3">
-                  <button 
-                    onClick={handleImportBooks}
-                    className="p-2.5 text-accent hover:bg-accent/5 rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-accent/20"
-                  >
-                    <Upload size={16} /> Importar CSV
-                  </button>
-                  <button 
-                    onClick={handleExportBooks}
-                    className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-border/50"
-                  >
-                    <Download size={16} /> Exportar CSV
-                  </button>
-                  <Link href="/admin/biblioteca/nuevo" className="bg-accent text-accent-foreground px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-[1.02] transition-all shadow-lg shadow-accent/10">
-                    <PlusCircle size={16} /> Añadir Libro
+              <div className="p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                  <h3 className="font-bold serif text-2xl mb-1">Gestión de Biblioteca</h3>
+                  <p className="text-xs text-muted-foreground font-medium">Controla el catálogo de libros digitales y descargas</p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50">
+                    <button 
+                      onClick={handleImportBooks}
+                      className="px-4 py-2 text-accent hover:bg-accent/10 rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                    >
+                      <Upload size={14} /> Importar
+                    </button>
+                    <div className="w-[1px] bg-border/50 my-1 mx-1" />
+                    <button 
+                      onClick={handleExportBooks}
+                      className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                    >
+                      <Download size={14} /> Exportar
+                    </button>
+                  </div>
+                  <Link href="/admin/biblioteca/nuevo" className="bg-accent text-accent-foreground px-5 py-3 rounded-xl text-xs font-black flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-accent/20">
+                    <PlusCircle size={16} /> AÑADIR LIBRO
                   </Link>
                 </div>
               </div>
@@ -754,14 +817,26 @@ export default function DashboardPage() {
           {/* Users Tab */}
           {activeTab === "users" && (
             <div className="animate-in fade-in duration-500">
-              <div className="p-8 border-b border-border flex justify-between items-center">
-                <h3 className="font-bold serif text-xl">Gestión de Usuarios</h3>
-                <button 
-                  onClick={handleExportUsers}
-                  className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-border/50"
-                >
-                  <Download size={16} /> Exportar CSV
-                </button>
+              <div className="p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                  <h3 className="font-bold serif text-2xl mb-1">Gestión de Usuarios</h3>
+                  <p className="text-xs text-muted-foreground font-medium">Administra miembros, roles y sanciones de la comunidad</p>
+                </div>
+                <div className="flex bg-muted/30 p-1 rounded-xl border border-border/50 self-start md:self-auto">
+                  <button 
+                    onClick={handleImportUsers}
+                    className="px-4 py-2 text-accent hover:bg-accent/10 rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                  >
+                    <Upload size={14} /> Importar
+                  </button>
+                  <div className="w-[1px] bg-border/50 my-1 mx-1" />
+                  <button 
+                    onClick={handleExportUsers}
+                    className="px-4 py-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all flex items-center gap-2 text-xs font-bold"
+                  >
+                    <Download size={14} /> Exportar
+                  </button>
+                </div>
               </div>
               <table className="w-full text-left">
                 <thead>
