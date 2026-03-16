@@ -7,7 +7,8 @@ import {
   signInWithRedirect,
   getRedirectResult,
   signOut, 
-  User 
+  User,
+  GoogleAuthProvider
 } from 'firebase/auth';
 import { auth, googleProvider, db } from '@/lib/firebase';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
@@ -23,7 +24,8 @@ interface AuthContextType {
   isAdmin: boolean;
   loading: boolean;
   banNotice: BanNotice | null;
-  login: () => Promise<void>;
+  calendarToken: string | null;
+  login: (requestCalendar?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   clearBanNotice: () => void;
 }
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [banNotice, setBanNotice] = useState<BanNotice | null>(null);
+  const [calendarToken, setCalendarToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (!auth) {
@@ -44,7 +47,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Check for redirect result on mount
-    getRedirectResult(auth).catch((error: unknown) => {
+    getRedirectResult(auth).then((result) => {
+      if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          setCalendarToken(credential.accessToken);
+        }
+      }
+    }).catch((error: unknown) => {
       console.error("Redirect auth error:", error);
     });
 
@@ -114,8 +124,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const login = async () => {
+  const login = async (requestCalendar: boolean = false) => {
     if (!auth || isAuthenticating) return;
+
+    if (requestCalendar) {
+      googleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+    }
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     setIsAuthenticating(true);
@@ -133,7 +147,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Desktop: Try popup first
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setCalendarToken(credential.accessToken);
+      }
     } catch (error: unknown) {
       const authError = error as { code?: string };
       
@@ -177,7 +195,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, banNotice, login, logout, clearBanNotice }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isAdmin, 
+      loading, 
+      banNotice, 
+      calendarToken,
+      login, 
+      logout, 
+      clearBanNotice 
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -15,7 +15,8 @@ import {
   getDocs,
   collectionGroup,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  limit
 } from "firebase/firestore";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -31,6 +32,8 @@ import {
   Trash2, 
   Edit3, 
   ExternalLink,
+  Calendar,
+  Video,
   Ban,
   UserCheck,
   Eye,
@@ -40,7 +43,8 @@ import {
   AlertCircle,
   Search,
   Download,
-  Upload
+  Upload,
+  Loader2
 } from "lucide-react";
 import Skeleton from "@/components/Skeleton";
 import { incrementDownloadCount } from "@/app/actions/library-actions";
@@ -97,10 +101,20 @@ interface CommentData {
   postTitle?: string;
 }
 
-type TabType = "posts" | "library" | "comments" | "users";
+interface Meeting {
+  id: string;
+  title: string;
+  description: string;
+  date: any;
+  duration: number;
+  location: string;
+  createdAt?: any;
+}
+
+type TabType = "posts" | "library" | "comments" | "users" | "meetings";
 
 export default function DashboardPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, loading: authLoading, calendarToken, login } = useAuth();
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState<TabType>("posts");
@@ -108,8 +122,10 @@ export default function DashboardPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
   const [comments, setComments] = useState<CommentData[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Modal States
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
@@ -118,6 +134,39 @@ export default function DashboardPage() {
   const [banDuration, setBanDuration] = useState<number | "permanent">(7);
   const [banReason, setBanReason] = useState("");
   const [customReason, setCustomReason] = useState(false);
+
+  // Meeting Form States
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [meetingsFormData, setMeetingsFormData] = useState([{
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    duration: 60,
+    location: ""
+  }]);
+
+  const addMeetingSlot = () => {
+    setMeetingsFormData([...meetingsFormData, {
+      title: "",
+      description: "",
+      date: "",
+      time: "",
+      duration: 60,
+      location: ""
+    }]);
+  };
+
+  const removeMeetingSlot = (index: number) => {
+    if (meetingsFormData.length <= 1) return;
+    setMeetingsFormData(meetingsFormData.filter((_, i) => i !== index));
+  };
+
+  const updateMeetingSlot = (index: number, data: any) => {
+    const newMeetings = [...meetingsFormData];
+    newMeetings[index] = { ...newMeetings[index], ...data };
+    setMeetingsFormData(newMeetings);
+  };
 
   const banReasons = [
     "Comportamiento tóxico o lenguaje ofensivo.",
@@ -369,6 +418,138 @@ export default function DashboardPage() {
     input.click();
   };
 
+  const generateGoogleCalendarUrl = (meeting: Meeting) => {
+    // meeting.date might be a Firestore Timestamp or a Date object during creation
+    const startDate = meeting.date.seconds ? new Date(meeting.date.seconds * 1000) : meeting.date;
+    const endDate = new Date(startDate.getTime() + meeting.duration * 60000);
+    
+    const formatTime = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+    
+    const url = new URL("https://www.google.com/calendar/render");
+    url.searchParams.append("action", "TEMPLATE");
+    url.searchParams.append("text", meeting.title);
+    url.searchParams.append("dates", `${formatTime(startDate)}/${formatTime(endDate)}`);
+    url.searchParams.append("details", meeting.description);
+    url.searchParams.append("location", meeting.location);
+    url.searchParams.append("sf", "true");
+    url.searchParams.append("output", "xml");
+    
+    return url.toString();
+  };
+
+  const syncToGoogleCalendar = async (meeting: any) => {
+    if (!calendarToken) {
+      toast.error("No hay token de calendario. Por favor, re-autentícate.");
+      return false;
+    }
+
+    try {
+      const startDate = meeting.date;
+      const endDate = new Date(startDate.getTime() + (meeting.duration || 60) * 60000);
+
+      const event = {
+        summary: meeting.title,
+        description: meeting.description,
+        location: meeting.location,
+        start: {
+          dateTime: startDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+        end: {
+          dateTime: endDate.toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      };
+
+      const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${calendarToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(event),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        // If 401, token might be expired
+        if (response.status === 401) {
+          toast.error("Tu sesión de Google ha expirado. Por favor, vuelve a entrar.");
+        }
+        throw new Error(err.error?.message || "Error al sincronizar");
+      }
+
+      toast.success("¡Sincronizado directamente con Google Calendar! ✨");
+      return true;
+    } catch (error: any) {
+      console.error("Calendar sync error:", error);
+      toast.error(`Error de sincronización: ${error.message}`);
+      return false;
+    }
+  };
+
+  const handleCreateMeeting = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db) return;
+
+    setIsSyncing(true);
+    try {
+      for (const formData of meetingsFormData) {
+        const startDateTime = new Date(`${formData.date}T${formData.time}`);
+        
+        const meetingData = {
+          title: formData.title,
+          description: formData.description,
+          date: startDateTime,
+          duration: parseInt(formData.duration.toString()),
+          location: formData.location
+        };
+
+        await addDoc(collection(db, "meetings"), {
+          ...meetingData,
+          createdAt: serverTimestamp()
+        });
+
+        // Try automatic sync if token is available
+        if (calendarToken) {
+          await syncToGoogleCalendar(meetingData);
+        } else {
+          // Fallback to manual link if no token
+          const calendarUrl = generateGoogleCalendarUrl(meetingData as any);
+          window.open(calendarUrl, "_blank");
+          toast.info(`Calendario abierto para: ${formData.title}`);
+        }
+      }
+
+      setIsMeetingModalOpen(false);
+      setMeetingsFormData([{
+        title: "",
+        description: "",
+        date: "",
+        time: "",
+        duration: 60,
+        location: ""
+      }]);
+      toast.success("¡Todas las reuniones han sido programadas! 🚀");
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+      toast.error("Error al programar las reuniones.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleDeleteMeeting = async (id: string) => {
+    if (!db || !confirm("¿Estás seguro de que quieres eliminar esta reunión?")) return;
+    try {
+      await deleteDoc(doc(db, "meetings", id));
+      toast.success("Reunión eliminada");
+    } catch (error) {
+      console.error("Error deleting meeting:", error);
+      toast.error("Error al eliminar");
+    }
+  };
+
   const handleExportPosts = () => {
     const dataToExport = posts.map(p => ({
       Título: p.title,
@@ -418,7 +599,7 @@ export default function DashboardPage() {
     const unsubscribers: (() => void)[] = [];
     // Track how many snapshots have loaded
     let loadedCount = 0;
-    const totalToLoad = 4;
+    const totalToLoad = 5;
 
     const checkLoaded = () => {
       loadedCount++;
@@ -428,46 +609,69 @@ export default function DashboardPage() {
     };
 
     // Posts Subscription
-    const qPosts = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-    const unsubPosts = onSnapshot(qPosts, (snap) => {
-      setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
-      checkLoaded();
-    });
+    const qPosts = query(collection(db, "posts"), orderBy("createdAt", "desc"), limit(50));
+    const unsubPosts = onSnapshot(qPosts, 
+      (snap) => {
+        setPosts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Post)));
+        checkLoaded();
+      },
+      (err) => console.error("Error en suscripción de RESEÑAS:", err)
+    );
     unsubscribers.push(unsubPosts);
 
     // Library Subscription
-    const qBooks = query(collection(db, "library"), orderBy("createdAt", "desc"));
-    const unsubBooks = onSnapshot(qBooks, (snap) => {
-      setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() } as Book)));
-      checkLoaded();
-    });
+    const qBooks = query(collection(db, "library"), orderBy("createdAt", "desc"), limit(50));
+    const unsubBooks = onSnapshot(qBooks, 
+      (snap) => {
+        setBooks(snap.docs.map(d => ({ id: d.id, ...d.data() } as Book)));
+        checkLoaded();
+      },
+      (err) => console.error("Error en suscripción de BIBLIOTECA:", err)
+    );
     unsubscribers.push(unsubBooks);
 
     // Users Subscription
-    const qUsers = query(collection(db, "users"), orderBy("lastLogin", "desc"));
-    const unsubUsers = onSnapshot(qUsers, (snap) => {
-      setUsers(snap.docs.map(d => ({ 
-        uid: d.id, 
-        email: d.data().email,
-        displayName: d.data().displayName,
-        photoURL: d.data().photoURL,
-        isBanned: d.data().isBanned
-      } as UserData)));
-      checkLoaded();
-    });
+    const qUsers = query(collection(db, "users"), orderBy("lastLogin", "desc"), limit(50));
+    const unsubUsers = onSnapshot(qUsers, 
+      (snap) => {
+        setUsers(snap.docs.map(d => ({ 
+          uid: d.id, 
+          email: d.data().email,
+          displayName: d.data().displayName,
+          photoURL: d.data().photoURL,
+          isBanned: d.data().isBanned
+        } as UserData)));
+        checkLoaded();
+      },
+      (err) => console.error("Error en suscripción de USUARIOS:", err)
+    );
     unsubscribers.push(unsubUsers);
 
     // Comments Subscription
-    const qComments = query(collectionGroup(db, "comments"), orderBy("createdAt", "desc"));
-    const unsubComments = onSnapshot(qComments, (snap) => {
-      setComments(snap.docs.map(d => ({ 
-        id: d.id, 
-        postId: d.ref.parent.parent?.id || "",
-        ...d.data() 
-      } as CommentData)));
-      checkLoaded();
-    });
+    const qComments = query(collectionGroup(db, "comments"), orderBy("createdAt", "desc"), limit(50));
+    const unsubComments = onSnapshot(qComments, 
+      (snap) => {
+        setComments(snap.docs.map(d => ({ 
+          id: d.id, 
+          postId: d.ref.parent.parent?.id || "",
+          ...d.data() 
+        } as CommentData)));
+        checkLoaded();
+      },
+      (err) => console.error("Error en suscripción de COMENTARIOS:", err)
+    );
     unsubscribers.push(unsubComments);
+
+    // Meetings Subscription (Keep all as they are usually few, but limit to 20 just in case)
+    const qMeetings = query(collection(db, "meetings"), orderBy("date", "asc"), limit(20));
+    const unsubMeetings = onSnapshot(qMeetings, 
+      (snap) => {
+        setMeetings(snap.docs.map(d => ({ id: d.id, ...d.data() } as Meeting)));
+        checkLoaded();
+      },
+      (err) => console.error("Error en suscripción de REUNIONES:", err)
+    );
+    unsubscribers.push(unsubMeetings);
 
     return () => unsubscribers.forEach(fn => fn());
   }, [isAdmin]);
@@ -580,6 +784,7 @@ export default function DashboardPage() {
     { id: "library", label: "Biblioteca", icon: BookOpen },
     { id: "comments", label: "Comentarios", icon: MessageSquare },
     { id: "users", label: "Usuarios", icon: Users },
+    { id: "meetings", label: "Reuniones", icon: Calendar },
   ];
 
   return (
@@ -907,8 +1112,266 @@ export default function DashboardPage() {
               </table>
             </div>
           )}
+          {/* Meetings Tab */}
+          {activeTab === "meetings" && (
+            <div className="animate-in fade-in duration-500">
+              <div className="p-8 border-b border-border flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div>
+                  <h3 className="font-bold serif text-2xl mb-1">Próximas Reuniones</h3>
+                  <p className="text-xs text-muted-foreground font-medium">Gestiona los encuentros y eventos del club</p>
+                </div>
+                <div className="flex flex-wrap gap-3 items-center">
+                  {!calendarToken && (
+                    <button 
+                      onClick={() => login(true)}
+                      className="px-4 py-2 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-xl text-[10px] font-black hover:bg-blue-500/20 transition-all flex items-center gap-2"
+                    >
+                      <Video size={14} /> ACTIVAR SINCRONIZACIÓN DIRECTA
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setIsMeetingModalOpen(true)}
+                    className="bg-accent text-accent-foreground px-5 py-3 rounded-xl text-xs font-black flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-accent/20"
+                  >
+                    <PlusCircle size={16} /> PROGRAMAR REUNIÓN
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8">
+                {meetings.length === 0 ? (
+                  <div className="text-center py-24 bg-muted/20 border-2 border-dashed border-border rounded-[2rem]">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+                      <Calendar size={32} />
+                    </div>
+                    <p className="text-muted-foreground font-medium">No hay reuniones programadas</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {meetings.map((meeting) => (
+                      <div key={meeting.id} className="bg-muted/20 border border-border p-8 rounded-[2rem] hover:border-accent/30 transition-all group overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:bg-accent/10 transition-colors" />
+                        
+                        <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10">
+                          <div className="space-y-4">
+                            <div>
+                              <div className="flex items-center gap-2 text-accent text-[10px] font-black uppercase tracking-widest mb-1">
+                                <span className="w-1 h-1 rounded-full bg-accent" />
+                                {new Date(meeting.date.seconds * 1000).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                              </div>
+                              <h4 className="text-2xl font-bold serif">{meeting.title}</h4>
+                            </div>
+                            
+                            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                              {meeting.description || "Sin descripción proporcionada."}
+                            </p>
+
+                            <div className="flex flex-wrap gap-4 pt-2">
+                              <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-background/50 px-3 py-1.5 rounded-lg border border-border/50">
+                                <Clock size={14} className="text-accent" />
+                                {new Date(meeting.date.seconds * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ({meeting.duration} min)
+                              </div>
+                              {meeting.location && (
+                                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-background/50 px-3 py-1.5 rounded-lg border border-border/50 max-w-[200px] truncate">
+                                  <Video size={14} className="text-accent" />
+                                  <span className="truncate">{meeting.location}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-row md:flex-col gap-2 justify-end">
+                            <a 
+                              href={generateGoogleCalendarUrl(meeting)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="bg-accent text-accent-foreground p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg shadow-accent/20 flex items-center justify-center gap-2 text-[10px] font-black"
+                              title="Añadir a Google Calendar"
+                            >
+                              <ExternalLink size={16} /> GOOGLE CALENDAR
+                            </a>
+                            <button 
+                              onClick={() => handleDeleteMeeting(meeting.id)}
+                              className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                              title="Eliminar"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Meeting Creation Modal */}
+      {isMeetingModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-300">
+          <div className="bg-background/80 backdrop-blur-2xl w-full max-w-6xl max-h-[95vh] rounded-[2.5rem] p-6 md:p-10 border border-white/20 shadow-[0_32px_128px_rgba(0,0,0,0.4)] relative flex flex-col overflow-hidden">
+            {/* Background decorative elements */}
+            <div className="absolute top-0 right-0 w-96 h-96 bg-accent/10 rounded-full -mr-48 -mt-48 blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/10 rounded-full -ml-48 -mb-48 blur-[100px] pointer-events-none" />
+
+            <button 
+              onClick={() => setIsMeetingModalOpen(false)}
+              className="absolute top-6 right-6 p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground rounded-full transition-all z-10"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="mb-6 relative shrink-0">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-accent/20 rounded-xl mb-4 shadow-inner ring-1 ring-white/20">
+                <Calendar className="text-accent" size={24} />
+              </div>
+              <h3 className="text-3xl font-bold serif mb-1 tracking-tight">Programar Reuniones</h3>
+              <p className="text-xs text-muted-foreground/80 leading-relaxed max-w-[400px]">
+                Configura tus encuentros en paralelo. Desliza horizontalmente para ver todos los bloques.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateMeeting} className="relative flex-1 flex flex-col min-h-0">
+              <div className="flex flex-row overflow-x-auto snap-x snap-mandatory gap-5 pb-6 px-1 custom-scrollbar scroll-smooth flex-1 min-h-0">
+                {meetingsFormData.map((formData, index) => (
+                  <div key={index} className="flex-shrink-0 w-full md:w-[440px] snap-center space-y-5 p-6 bg-white/5 rounded-[2rem] border border-white/10 relative group/slot shadow-lg overflow-y-auto custom-scrollbar">
+                    <div className="flex justify-between items-center mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black bg-accent text-accent-foreground px-2.5 py-0.5 rounded-full uppercase tracking-widest">Reunión #{index + 1}</span>
+                        {index === 0 && <span className="text-[8px] text-accent font-bold uppercase tracking-tighter opacity-70">Principal</span>}
+                      </div>
+                      {meetingsFormData.length > 1 && (
+                        <button 
+                          type="button"
+                          onClick={() => removeMeetingSlot(index)}
+                          className="text-red-500/50 hover:text-red-500 p-1.5 transition-all hover:bg-red-500/10 rounded-lg"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3 flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-accent" /> Título
+                      </label>
+                      <input 
+                        required
+                        type="text" 
+                        placeholder="Nombre de la reunión..."
+                        className="w-full bg-muted/30 hover:bg-muted/50 px-6 py-3.5 rounded-[1.5rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-bold text-base placeholder:text-muted-foreground/30 shadow-inner group-focus-within/input:border-accent/30"
+                        value={formData.title}
+                        onChange={(e) => updateMeetingSlot(index, { title: e.target.value })}
+                        disabled={isSyncing}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Fecha</label>
+                        <input 
+                          required
+                          type="date" 
+                          className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-black text-xs appearance-none"
+                          value={formData.date}
+                          onChange={(e) => updateMeetingSlot(index, { date: e.target.value })}
+                          disabled={isSyncing}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Hora</label>
+                        <input 
+                          required
+                          type="time" 
+                          className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-black text-xs appearance-none"
+                          value={formData.time}
+                          onChange={(e) => updateMeetingSlot(index, { time: e.target.value })}
+                          disabled={isSyncing}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Duración</label>
+                        <div className="relative">
+                          <input 
+                            required
+                            type="number" 
+                            className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-black text-xs"
+                            value={formData.duration}
+                            onChange={(e) => updateMeetingSlot(index, { duration: parseInt(e.target.value) })}
+                            disabled={isSyncing}
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black opacity-30">MIN</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Ubicación</label>
+                        <input 
+                          type="text" 
+                          placeholder="Meet / Zoom"
+                          className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-black text-xs"
+                          value={formData.location}
+                          onChange={(e) => updateMeetingSlot(index, { location: e.target.value })}
+                          disabled={isSyncing}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Descripción</label>
+                      <textarea 
+                        rows={1}
+                        placeholder="Opcional..."
+                        className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-medium resize-none text-[11px]"
+                        value={formData.description}
+                        onChange={(e) => updateMeetingSlot(index, { description: e.target.value })}
+                        disabled={isSyncing}
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <button 
+                  type="button"
+                  onClick={addMeetingSlot}
+                  disabled={isSyncing}
+                  className="flex-shrink-0 w-full md:w-[260px] border-2 border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center gap-3 text-muted-foreground hover:border-accent/40 hover:text-accent hover:bg-accent/5 transition-all font-black uppercase tracking-widest text-[10px] snap-center group"
+                >
+                  <div className="w-14 h-14 bg-muted/30 rounded-full flex items-center justify-center group-hover:bg-accent/20 group-hover:scale-110 transition-all">
+                    <PlusCircle size={28} />
+                  </div>
+                  <span>Añadir otra</span>
+                </button>
+              </div>
+
+              <div className="pt-6 shrink-0 flex justify-end">
+                <button 
+                  type="submit"
+                  disabled={isSyncing}
+                  className="w-full md:w-auto md:min-w-[340px] bg-accent text-accent-foreground py-4 px-10 rounded-[2rem] font-black text-lg shadow-xl shadow-accent/40 hover:scale-[1.02] active:scale-[0.98] transition-all relative overflow-hidden group disabled:opacity-70 disabled:scale-100 disabled:cursor-not-allowed"
+                >
+                  <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
+                  {isSyncing ? (
+                    <span className="flex items-center justify-center gap-3">
+                      <Loader2 className="animate-spin" size={20} />
+                      PROCESANDO {meetingsFormData.length} REUNIONES...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-3">
+                      GUARDAR {meetingsFormData.length} REUNIONES <ExternalLink size={18} className="opacity-50" />
+                    </span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Ban Modal */}
       {isBanModalOpen && selectedUser && (
