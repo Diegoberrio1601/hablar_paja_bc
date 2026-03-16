@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Users, Mic2, MessageSquareText } from 'lucide-react';
 import { WhatsAppIcon } from './WhatsAppIcon';
-import { motion } from 'framer-motion';
 
 export default function ClubSection() {
   return (
@@ -11,37 +11,46 @@ export default function ClubSection() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-12">
           <div className="space-y-8">
-            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em]">Únete a nosotros</span>
+            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em]">ÚNETE A LA PAJITA</span>
             <h2 className="text-4xl md:text-7xl font-bold serif leading-tight">
-              Hablar Paja BC: <br />
-              <span className="text-muted-foreground italic">Mucho más que un club de lectura</span>
+              Hablar Paja BC <br />
+              <span className="text-muted-foreground italic text-3xl md:text-4xl block mt-2">Donde los libros te aprietan la cabeza… y las ideas se corren.</span>
             </h2>
-            <p className="text-muted-foreground text-xl md:text-2xl leading-relaxed mx-auto max-w-2xl">
-              Somos una comunidad vibrante donde las historias cobran vida fuera de los libros. 
-              Si te apasiona debatir, compartir y descubrir nuevas perspectivas, este es tu lugar.
-            </p>
+            <div className="text-muted-foreground text-lg md:text-xl leading-relaxed mx-auto max-w-2xl space-y-4 font-medium">
+              <p>Somos una comunidad donde las historias no solo se leen. Se saborean, se comentan y se disfrutan sin prisa.</p>
+              <p>Aquí nos gusta hablar paja sin pena, dejar que los libros nos lleven… y cuando una historia está buena, darle otra vuelta más.</p>
+              <p className="text-foreground italic">
+                Si eres de quienes disfrutan una buena pajita literaria, de esas que empiezan suave… pero terminan explotándote la cabeza, entonces este es tu lugar.
+              </p>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 pt-12">
               <div className="space-y-4">
                 <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center text-accent mx-auto">
                   <Users size={32} />
                 </div>
-                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">Comunidad</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">Lecturas conjuntas y debates activos cada mes.</p>
+                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">COMUNIDAD</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed px-4">
+                  Cada mes nos reunimos para hacer la pajita juntos. Leemos el mismo libro, lo comentamos y dejamos que la conversación se ponga intensa.
+                </p>
               </div>
               <div className="space-y-4">
                 <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center text-accent mx-auto">
                   <Mic2 size={32} />
                 </div>
-                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">Podcast</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">Participa en nuestras grabaciones en vivo.</p>
+                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">PODCAST</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed px-4">
+                  Algunas pajitas merecen hacerse en voz alta. Por eso grabamos nuestros encuentros para que escuches cómo las ideas empiezan a fluir.
+                </p>
               </div>
               <div className="space-y-4">
                 <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center text-accent mx-auto">
                   <MessageSquareText size={32} />
                 </div>
-                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">Debates</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">Sin censura, sin paja, solo la esencia literaria.</p>
+                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">DEBATES</h4>
+                <p className="text-xs text-muted-foreground leading-relaxed px-4">
+                  Sin censura. Sin rodeos. Sin paja innecesaria. Solo el libro, las ideas y las ganas de darle duro a la conversación.
+                </p>
               </div>
             </div>
 

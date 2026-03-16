@@ -11,6 +11,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import CommentSection from "@/components/CommentSection";
 import { useAuth } from "@/context/AuthContext";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 interface Post {
   title: string;
@@ -76,8 +77,9 @@ export default function PostContent({ id }: { id: string }) {
   };
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen bg-background text-foreground relative overflow-hidden">
       <Navbar />
+      <AnimatedBackground />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
