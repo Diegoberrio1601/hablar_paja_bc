@@ -109,7 +109,7 @@ export default function Footer() {
       </div>
 
       {/* Centered Navigation */}
-      <div className="max-w-7xl mx-auto flex justify-center mb-16">
+      <div className="max-w-7xl mx-auto flex justify-center mb-16 relative z-10">
         <nav className="flex items-center gap-12">
           <Link href="/" className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
             Inicio
