@@ -142,32 +142,14 @@ function Navbar() {
                     
                     <div className="px-2 space-y-1">
                       {isAdmin && (
-                        <>
-                          <Link 
-                            href="/admin/dashboard"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
-                          >
-                            <LayoutDashboard size={16} />
-                            <span>Dashboard</span>
-                          </Link>
-                          <Link 
-                            href="/admin/publicar"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
-                          >
-                            <PlusCircle size={16} />
-                            <span>Publicar reseña</span>
-                          </Link>
-                          <Link 
-                            href="/admin/biblioteca"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all"
-                          >
-                            <BookOpen size={16} />
-                            <span>Gestionar Biblioteca</span>
-                          </Link>
-                        </>
+                        <Link 
+                          href="/admin/dashboard"
+                          onClick={() => setIsMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-accent hover:bg-accent/5 rounded-xl transition-all font-bold"
+                        >
+                          <LayoutDashboard size={16} />
+                          <span>Panel de Control</span>
+                        </Link>
                       )}
                       
                       <button 
@@ -260,26 +242,10 @@ function Navbar() {
                       <Link 
                         href="/admin/dashboard" 
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest hover:text-accent transition-colors"
+                        className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest text-accent transition-colors"
                       >
                         <LayoutDashboard size={18} />
-                        Dashboard
-                      </Link>
-                      <Link 
-                        href="/admin/publicar" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest hover:text-accent transition-colors"
-                      >
-                        <PlusCircle size={18} />
-                        Publicar
-                      </Link>
-                      <Link 
-                        href="/admin/biblioteca" 
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 text-sm font-bold uppercase tracking-widest hover:text-accent transition-colors"
-                      >
-                        <BookOpen size={18} />
-                        Gestionar
+                        Panel de Control
                       </Link>
                     </div>
                   )}

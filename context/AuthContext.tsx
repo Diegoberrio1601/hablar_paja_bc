@@ -9,14 +9,23 @@ import {
   signOut, 
   User 
 } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+import { auth, googleProvider, db } from '@/lib/firebase';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+
+interface BanNotice {
+  isActive: boolean;
+  reason?: string;
+  until?: Date | null;
+}
 
 interface AuthContextType {
   user: User | null;
   isAdmin: boolean;
   loading: boolean;
+  banNotice: BanNotice | null;
   login: () => Promise<void>;
   logout: () => Promise<void>;
+  clearBanNotice: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [banNotice, setBanNotice] = useState<BanNotice | null>(null);
 
   useEffect(() => {
     if (!auth) {
@@ -38,7 +48,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Redirect auth error:", error);
     });
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth!, async (user) => {
+      if (user && db) {
+        // Check if user is banned
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        const userData = userDoc.data();
+        
+        if (userData?.isBanned) {
+          const now = Date.now();
+          const bannedUntilDate = userData.bannedUntil?.toDate?.() || null;
+          
+          if (bannedUntilDate && now > bannedUntilDate.getTime()) {
+            // Ban has expired! Auto-unban
+            await updateDoc(doc(db, "users", user.uid), {
+              isBanned: false,
+              bannedUntil: null
+            });
+
+            // Notify via Email (background)
+            fetch('/api/admin/notify-ban', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: user.email,
+                name: user.displayName,
+                type: 'unban'
+              })
+            }).catch(err => console.error("Auto-unban notification error:", err));
+            
+            // Allow login to continue...
+          } else {
+            // Still banned (timed or permanent)
+            setBanNotice({
+              isActive: true,
+              reason: userData.banReason || "Incumplimiento de normas de la comunidad.",
+              until: bannedUntilDate
+            });
+            await signOut(auth!);
+            setUser(null);
+            setIsAdmin(false);
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Sync user data
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+          lastLogin: serverTimestamp(),
+          isBanned: userData?.isBanned || false
+        }, { merge: true });
+      }
+
       setUser(user);
       const adminEmails = process.env.NEXT_PUBLIC_ADMIN_EMAIL?.split(',') || [];
       setIsAdmin(!!user?.email && adminEmails.includes(user.email));
@@ -100,17 +164,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const clearBanNotice = () => setBanNotice(null);
+
   const logout = async () => {
     if (!auth) return;
     try {
       await signOut(auth);
+      setBanNotice(null);
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, banNotice, login, logout, clearBanNotice }}>
       {children}
     </AuthContext.Provider>
   );

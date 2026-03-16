@@ -53,6 +53,8 @@ export const metadata: Metadata = {
   }
 };
 
+import BannedNotice from "@/components/BannedNotice";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -70,6 +72,7 @@ export default function RootLayout({
               </div>
             </div>
             <Toaster />
+            <BannedNotice />
           </AuthProvider>
         </ThemeProvider>
       </body>

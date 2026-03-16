@@ -23,8 +23,8 @@ function Footer() {
             Hablar Paja <span className="text-muted-foreground">BC</span>
           </Link>
           <p className="text-muted-foreground text-sm leading-relaxed mb-6 max-w-xs">
-            Un espacio para los que aman los libros, la paja y no tienen miedo de decir lo que piensan.
-            Buscamos la esencia de las historias más allá de las páginas.
+            En Hablar Paja BC no solo leemos: conectamos.
+            Somos una comunidad de pajer@s que se reúne para leer junt@s, debatir sin pena y dejar que las ideas corran libres.
           </p>
           <div className="flex gap-5">
             {mounted && (
@@ -70,7 +70,8 @@ function Footer() {
         <div className="flex flex-col md:items-end">
           <h4 className="font-bold mb-8 text-xs uppercase tracking-widest text-foreground md:text-right">El Club</h4>
           <p className="text-muted-foreground text-sm leading-relaxed mb-6 md:text-right md:max-w-xs ml-auto">
-            No solo leemos, conectamos. El club Hablar Paja BC es una comunidad activa con lecturas conjuntas, debates en vivo y podcast semanales.
+            Lecturas compartidas. Debates en vivo. Podcast donde la paja se escucha sin filtro.<br />
+            Porque cuando un libro está bueno siempre provoca hablar paja un rato más. 📚😏
           </p>
           <motion.a 
             href="https://chat.whatsapp.com/G99jS3ldw8pBwmZ3VD56Ah?mode=gi_t"

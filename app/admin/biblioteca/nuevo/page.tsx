@@ -70,10 +70,11 @@ export default function NewBook() {
       await addDoc(collection(db!, "library"), {
         ...formData,
         coverImage: coverImageUrl,
+        downloadCount: 0,
         createdAt: serverTimestamp()
       });
 
-      router.push('/admin/biblioteca');
+      router.push('/admin/dashboard');
     } catch (error: any) {
       console.error("Error adding book:", error);
       setErrorMessage(error.message || "Hubo un error al guardar el libro.");
@@ -89,11 +90,11 @@ export default function NewBook() {
       <Navbar />
       <div className="pt-32 pb-24 px-6 max-w-2xl mx-auto">
         <Link 
-          href="/admin/biblioteca"
+          href="/admin/dashboard"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-accent mb-8 transition-colors font-medium text-sm"
         >
           <ArrowLeft size={16} />
-          Volver al listado
+          Volver al Panel de Control
         </Link>
 
         <div className="flex items-center gap-4 mb-12">

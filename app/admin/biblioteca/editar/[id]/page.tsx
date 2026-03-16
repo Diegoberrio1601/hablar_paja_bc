@@ -110,7 +110,7 @@ export default function EditBook() {
         updatedAt: new Date()
       });
 
-      router.push('/admin/biblioteca');
+      router.push('/admin/dashboard');
     } catch (error: any) {
       console.error("Error updating book:", error);
       setErrorMessage(error.message || "Hubo un error al actualizar el libro.");
@@ -126,11 +126,11 @@ export default function EditBook() {
       <Navbar />
       <div className="pt-32 pb-24 px-6 max-w-2xl mx-auto">
         <Link 
-          href="/admin/biblioteca"
+          href="/admin/dashboard"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-accent mb-8 transition-colors font-medium text-sm"
         >
           <ArrowLeft size={16} />
-          Volver al listado
+          Volver al Panel de Control
         </Link>
 
         <div className="flex items-center gap-4 mb-12">

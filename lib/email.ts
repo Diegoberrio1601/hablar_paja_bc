@@ -268,3 +268,156 @@ export async function sendBookEmail(toEmail: string, bookTitle: string, bookAuth
     return { success: false, error: "Error al enviar el correo." };
   }
 }
+
+/**
+ * Sends a notification email about account suspension.
+ */
+export async function sendBanEmail(toEmail: string, userName: string, durationLabel: string, reason: string) {
+  if (!gmailUser || !gmailPass) {
+    console.warn("Gmail credentials missing. Email not sent.");
+    return { success: false, error: "Configuración de correo incompleta." };
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: gmailUser, pass: gmailPass },
+  });
+
+  const isPermanent = durationLabel.toLowerCase() === 'permanente';
+  
+  const mailOptions = {
+    from: `"Hablar Paja BC" <${gmailUser}>`,
+    to: toEmail,
+    subject: isPermanent 
+      ? `🛑 Aviso Importante: Suspensión de cuenta - Hablar Paja BC`
+      : `⚠️ Suspensión temporal de cuenta - Hablar Paja BC`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+            body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Outfit', sans-serif; }
+            .card { max-width: 600px; margin: 40px auto; background: white; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
+            .header { padding: 40px; background: #1a1a1a; color: white; text-align: center; }
+            .content { padding: 48px; }
+            .title { font-size: 24px; font-weight: 800; color: #1a1a1a; margin-bottom: 24px; }
+            .info-box { background: #fff5f5; border: 1px solid #fed7d7; padding: 24px; border-radius: 20px; color: #c53030; margin: 32px 0; }
+            .reason-box { background: #f8fafc; border-left: 4px solid #1a1a1a; padding: 20px; border-radius: 12px; font-style: italic; color: #4a5568; margin-bottom: 32px; }
+            .footer { padding: 40px; text-align: center; background: #fafbfc; font-size: 12px; color: #94a3b8; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="header">
+              <h2 style="margin:0; letter-spacing: -0.02em;">Hablar Paja BC</h2>
+            </div>
+            <div class="content">
+              <h1 class="title">Hola, ${userName}</h1>
+              <p>Te informamos que tu cuenta ha sido suspendida debido al siguiente motivo:</p>
+              
+              <div class="reason-box">
+                "${reason}"
+              </div>
+
+              <div class="info-box">
+                <p style="margin:0; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #9b2c2c; margin-bottom: 8px;">Estado de la cuenta</p>
+                <p style="margin:0; font-size: 18px; font-weight: 600;">Suspensión: ${durationLabel}</p>
+              </div>
+
+              <p>Durante este periodo no podrás comentar en los posts ni acceder a las funciones exclusivas del Club.</p>
+              
+              <p style="color: #718096; margin-top: 32px; font-size: 14px;">
+                Si crees que esto es un error o deseas apelar la decisión, por favor responde a este correo.
+              </p>
+            </div>
+            <div class="footer">
+              © 2026 Hablar Paja BC • Comunidad Literaria
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending ban email:", error);
+    return { success: false };
+  }
+}
+
+/**
+ * Sends a notification email about account restoration.
+ */
+export async function sendUnbanEmail(toEmail: string, userName: string) {
+  if (!gmailUser || !gmailPass) {
+    console.warn("Gmail credentials missing. Email not sent.");
+    return { success: false, error: "Configuración de correo incompleta." };
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: gmailUser, pass: gmailPass },
+  });
+
+  const mailOptions = {
+    from: `"Hablar Paja BC" <${gmailUser}>`,
+    to: toEmail,
+    subject: `✨ ¡Buenas noticias! Tu cuenta ha sido restaurada - Hablar Paja BC`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+            body { margin: 0; padding: 0; background-color: #f0fdf4; font-family: 'Outfit', sans-serif; }
+            .card { max-width: 600px; margin: 40px auto; background: white; border-radius: 32px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border: 1px solid #dcfce7; }
+            .header { padding: 40px; background: #22c55e; color: white; text-align: center; }
+            .content { padding: 48px; }
+            .title { font-size: 24px; font-weight: 800; color: #1a1a1a; margin-bottom: 24px; }
+            .success-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 24px; border-radius: 20px; color: #166534; margin: 32px 0; }
+            .footer { padding: 40px; text-align: center; background: #fafbfc; font-size: 12px; color: #94a3b8; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="header">
+              <h2 style="margin:0; letter-spacing: -0.02em;">Hablar Paja BC</h2>
+            </div>
+            <div class="content">
+              <h1 class="title">¡Hola de nuevo, ${userName}! 🌈</h1>
+              <p>Nos alegra informarte que tu acceso al Club ha sido restaurado con éxito.</p>
+              
+              <div class="success-box">
+                <p style="margin:0; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; color: #166534; margin-bottom: 8px;">Estado de la cuenta</p>
+                <p style="margin:0; font-size: 18px; font-weight: 600;">✅ Activa y lista para participar</p>
+              </div>
+
+              <p>Ya puedes volver a comentar en los posts, participar en los debates y disfrutar de todas las ventajas de ser parte de nuestra comunidad.</p>
+              
+              <p>Te esperamos para seguir hablando paja (de la buena) sobre libros.</p>
+
+              <div style="margin-top: 40px; text-align: center;">
+                <a href="https://hablarpajabc.com" style="background: #22c55e; color: white; padding: 16px 32px; border-radius: 100px; text-decoration: none; font-weight: 800; display: inline-block;">Volver al Club</a>
+              </div>
+            </div>
+            <div class="footer">
+              © 2026 Hablar Paja BC • Lecturas Compartidas
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending unban email:", error);
+    return { success: false };
+  }
+}

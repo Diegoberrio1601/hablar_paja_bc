@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import Skeleton from '@/components/Skeleton';
 import { Download, Lock, Search, BookOpen, X, Mail, CheckCircle2 } from 'lucide-react';
-import { requestBookEmail } from '@/app/actions/library-actions';
+import { requestBookEmail, incrementDownloadCount } from '@/app/actions/library-actions';
 import { toast } from 'sonner';
 
 interface Book {
@@ -18,6 +18,7 @@ interface Book {
   description: string;
   coverImage: string;
   downloadUrl: string;
+  downloadCount?: number;
   createdAt?: any;
 }
 
@@ -47,6 +48,14 @@ export default function LibraryGrid() {
       const result = await requestBookEmail(user.email, book.title, book.author, book.downloadUrl);
       if (result.success) {
         setEmailSent(true);
+        // Increment download count
+        incrementDownloadCount(book.id)
+          .then(res => {
+            if (!res.success) console.error("Increment failed:", res.error);
+            else console.log("Increment successful");
+          })
+          .catch(err => console.error("Error calling increment action:", err));
+        
         toast.success("¡Libro enviado!", {
           description: "Revisa tu bandeja de entrada (y la carpeta de spam por si las moscas 🪰).",
           duration: 6000,
@@ -150,10 +159,16 @@ export default function LibraryGrid() {
                 />
                 
                 {/* Overlay on hover - subtle hint */}
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
                    <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white">
                       <BookOpen size={20} />
                    </div>
+                   {book.downloadCount !== undefined && (
+                     <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2 border border-white/20 shadow-xl">
+                       <Download size={12} className="text-accent" />
+                       <span className="text-[10px] font-black text-white tracking-tight">{book.downloadCount} <span className="opacity-60 font-medium lowercase">descargas</span></span>
+                     </div>
+                   )}
                 </div>
               </div>
 
@@ -209,7 +224,18 @@ export default function LibraryGrid() {
               {/* Content info */}
               <div className="flex-1 p-8 md:p-12 overflow-y-auto flex flex-col">
                 <div className="hidden md:block mb-8">
-                  <p className="text-accent text-xs font-bold uppercase tracking-widest mb-2">{selectedBook.author}</p>
+                  <div className="flex items-center gap-3 mb-2">
+                    <p className="text-accent text-xs font-bold uppercase tracking-widest">{selectedBook.author}</p>
+                    {selectedBook.downloadCount !== undefined && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted/20 px-3 py-1 rounded-full">
+                          <Download size={12} className="text-accent" />
+                          {selectedBook.downloadCount} descargas
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <h2 className="text-4xl font-bold serif leading-tight">{selectedBook.title}</h2>
                 </div>
 
