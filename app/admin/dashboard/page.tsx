@@ -13,8 +13,11 @@ import {
   doc, 
   updateDoc, 
   getDocs,
-  collectionGroup
+  collectionGroup,
+  addDoc,
+  serverTimestamp
 } from "firebase/firestore";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
@@ -36,7 +39,8 @@ import {
   Clock,
   AlertCircle,
   Search,
-  Download
+  Download,
+  Upload
 } from "lucide-react";
 import Skeleton from "@/components/Skeleton";
 import { incrementDownloadCount } from "@/app/actions/library-actions";
@@ -58,9 +62,9 @@ interface Post {
   id: string;
   title: string;
   category?: string;
-  author?: string;
-  coverImage?: string;
-  content?: string;
+  bookAuthor?: string;
+  image?: string;
+  desc?: string;
   isFeatured?: boolean;
   createdAt?: any;
 }
@@ -160,31 +164,182 @@ export default function DashboardPage() {
     document.body.removeChild(link);
   };
 
+  const parseCSV = (csvText: string) => {
+    const lines: string[] = [];
+    let currentLine = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < csvText.length; i++) {
+      const char = csvText[i];
+      if (char === '"') inQuotes = !inQuotes;
+      if (char === '\n' && !inQuotes) {
+        lines.push(currentLine);
+        currentLine = "";
+      } else {
+        currentLine += char;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    if (lines.length < 2) return [];
+
+    const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+    return lines.slice(1).map(line => {
+      const values: string[] = [];
+      let currentValue = "";
+      let inQuotesCell = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') inQuotesCell = !inQuotesCell;
+        else if (char === ',' && !inQuotesCell) {
+          values.push(currentValue.replace(/""/g, '"').trim());
+          currentValue = "";
+        } else {
+          currentValue += char;
+        }
+      }
+      values.push(currentValue.replace(/""/g, '"').trim());
+
+      const obj: any = {};
+      headers.forEach((header, index) => {
+        obj[header] = values[index];
+      });
+      return obj;
+    });
+  };
+
+  const handleImportPosts = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event: any) => {
+        const text = event.target.result;
+        const data = parseCSV(text);
+        if (data.length === 0) return;
+
+        let added = 0;
+        let skipped = 0;
+
+        for (const item of data) {
+          const title = item['Título'];
+          if (!title) continue;
+
+          // Duplicate check
+          const exists = posts.some(p => p.title.toLowerCase() === title.toLowerCase());
+          if (exists) {
+            skipped++;
+            continue;
+          }
+
+          try {
+            await addDoc(collection(db!, "posts"), {
+              title: title,
+              category: item['Categoría'] || 'Libros',
+              bookAuthor: item['Autor'] || '',
+              isFeatured: item['Contenido Destacado'] === 'Sí',
+              image: item['Imagen Portada'] || item['URL de la imagen'] || '',
+              desc: item['CONTENIDO (MARKDOWN)'] || '',
+              authorName: "Importado",
+              createdAt: serverTimestamp()
+            });
+            added++;
+          } catch (err) {
+            console.error("Error importing post:", err);
+          }
+        }
+        toast.success(`Importación finalizada`, {
+          description: `${added} reseñas añadidas, ${skipped} omitidas por existir previamente.`
+        });
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
+  const handleImportBooks = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+    input.onchange = async (e: any) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (event: any) => {
+        const text = event.target.result;
+        const data = parseCSV(text);
+        if (data.length === 0) return;
+
+        let added = 0;
+        let skipped = 0;
+
+        for (const item of data) {
+          const title = item['Título'];
+          const author = item['Autor'];
+          if (!title || !author) continue;
+
+          // Duplicate check
+          const exists = books.some(b => 
+            b.title.toLowerCase() === title.toLowerCase() && 
+            b.author.toLowerCase() === author.toLowerCase()
+          );
+          if (exists) {
+            skipped++;
+            continue;
+          }
+
+          try {
+            await addDoc(collection(db!, "library"), {
+              title: title,
+              author: author,
+              downloadCount: parseInt(item['Descargas']) || 0,
+              downloadUrl: item['URL'] || '',
+              description: item['sinapsis'] || '',
+              coverImage: "", // We don't export/import local cover images easily via CSV
+              createdAt: serverTimestamp()
+            });
+            added++;
+          } catch (err) {
+            console.error("Error importing book:", err);
+          }
+        }
+        toast.success(`Importación finalizada`, {
+          description: `${added} libros añadidos, ${skipped} omitidos por existir previamente.`
+        });
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  };
+
   const handleExportPosts = () => {
     const dataToExport = posts.map(p => ({
-      ID: p.id,
       Título: p.title,
       Categoría: p.category || 'N/A',
-      Autor: p.author || 'N/A',
-      'Imagen Portada': p.coverImage || 'N/A',
-      Destacado: p.isFeatured ? "Sí" : "No",
-      'Fecha Creación': p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleString() : 'N/A',
-      'CONTENIDO (MARKDOWN)': p.content || ''
+      Autor: p.bookAuthor || 'N/A',
+      'Contenido Destacado': p.isFeatured ? "Sí" : "No",
+      'Imagen Portada': p.image || 'N/A',
+      'URL de la imagen': p.image || 'N/A',
+      'CONTENIDO (MARKDOWN)': p.desc || ''
     }));
-    exportToCSV(dataToExport, "Reseñas_Detalladas_HablarPaja");
+    exportToCSV(dataToExport, "Reseñas_HablarPaja");
   };
 
   const handleExportBooks = () => {
     const dataToExport = books.map(b => ({
-      ID: b.id,
       Título: b.title,
       Autor: b.author,
       Descargas: b.downloadCount || 0,
-      'URL Descarga': b.downloadUrl,
-      'Fecha Registro': b.createdAt ? new Date(b.createdAt.seconds * 1000).toLocaleString() : 'N/A',
-      Sinopsis: b.description || ''
+      URL: b.downloadUrl,
+      sinapsis: b.description || ''
     }));
-    exportToCSV(dataToExport, "Biblioteca_Detallada_HablarPaja");
+    exportToCSV(dataToExport, "Biblioteca_HablarPaja");
   };
 
   const handleExportUsers = () => {
@@ -426,6 +581,12 @@ export default function DashboardPage() {
                 <h3 className="font-bold serif text-xl">Gestión de Reseñas</h3>
                 <div className="flex gap-3">
                   <button 
+                    onClick={handleImportPosts}
+                    className="p-2.5 text-accent hover:bg-accent/5 rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-accent/20"
+                  >
+                    <Upload size={16} /> Importar CSV
+                  </button>
+                  <button 
                     onClick={handleExportPosts}
                     className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-border/50"
                   >
@@ -481,6 +642,12 @@ export default function DashboardPage() {
               <div className="p-8 border-b border-border flex justify-between items-center">
                 <h3 className="font-bold serif text-xl">Gestión de Biblioteca</h3>
                 <div className="flex gap-3">
+                  <button 
+                    onClick={handleImportBooks}
+                    className="p-2.5 text-accent hover:bg-accent/5 rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-accent/20"
+                  >
+                    <Upload size={16} /> Importar CSV
+                  </button>
                   <button 
                     onClick={handleExportBooks}
                     className="p-2.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition-all flex items-center gap-2 text-xs font-bold border border-border/50"
