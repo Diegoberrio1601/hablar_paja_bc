@@ -169,7 +169,7 @@ function Navbar() {
             </div>
           ) : (
             <button 
-              onClick={login}
+              onClick={() => login()}
               className="hidden md:block bg-accent text-accent-foreground px-6 py-2 rounded-full text-sm font-bold shadow-lg hover:shadow-xl hover:translate-y-[-2px] transition-all"
             >
               Entrar

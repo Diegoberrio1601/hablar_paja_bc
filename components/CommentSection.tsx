@@ -226,7 +226,7 @@ export default function CommentSection({ postId }: CommentSectionProps) {
         <div className="mb-16 p-8 bg-accent/5 rounded-[2rem] border border-accent/10 border-dashed text-center space-y-4">
           <p className="text-muted-foreground">Únete a la conversación para compartir tus ideas.</p>
           <button 
-            onClick={login}
+            onClick={() => login()}
             className="bg-accent text-accent-foreground px-8 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all"
           >
             Iniciar sesión para comentar
