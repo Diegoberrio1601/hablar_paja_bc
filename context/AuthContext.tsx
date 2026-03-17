@@ -25,6 +25,7 @@ interface AuthContextType {
   loading: boolean;
   banNotice: BanNotice | null;
   calendarToken: string | null;
+  setCalendarToken: (token: string | null) => void;
   login: (requestCalendar?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   clearBanNotice: () => void;
@@ -216,6 +217,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading, 
       banNotice, 
       calendarToken,
+      setCalendarToken,
       login, 
       logout, 
       clearBanNotice 

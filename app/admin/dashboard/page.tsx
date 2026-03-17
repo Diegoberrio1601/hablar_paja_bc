@@ -44,7 +44,10 @@ import {
   Search,
   Download,
   Upload,
-  Loader2
+  Loader2,
+  Bell,
+  Send,
+  Check
 } from "lucide-react";
 import Skeleton from "@/components/Skeleton";
 import { incrementDownloadCount } from "@/app/actions/library-actions";
@@ -109,13 +112,17 @@ interface Meeting {
   duration: number;
   location: string;
   calendarEventId?: string;
+  reminderSent?: boolean;
+  autoReminder?: boolean;
+  reminderLeadTime?: number;
+  reminderSentAt?: any;
   createdAt?: any;
 }
 
 type TabType = "posts" | "library" | "comments" | "users" | "meetings";
 
 export default function DashboardPage() {
-  const { isAdmin, loading: authLoading, calendarToken, login } = useAuth();
+  const { isAdmin, loading: authLoading, calendarToken, login, setCalendarToken } = useAuth();
   const router = useRouter();
   
   const [activeTab, setActiveTab] = useState<TabType>("posts");
@@ -144,7 +151,9 @@ export default function DashboardPage() {
     date: "",
     time: "",
     duration: 60,
-    location: ""
+    location: "",
+    autoReminder: true,
+    reminderLeadTime: 60
   }]);
 
   const addMeetingSlot = () => {
@@ -154,7 +163,9 @@ export default function DashboardPage() {
       date: "",
       time: "",
       duration: 60,
-      location: ""
+      location: "",
+      autoReminder: true,
+      reminderLeadTime: 60
     }]);
   };
 
@@ -473,9 +484,15 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         const err = await response.json();
-        // If 401, token might be expired
         if (response.status === 401) {
-          toast.error("Tu sesión de Google ha expirado. Por favor, vuelve a entrar.");
+          setCalendarToken(null);
+          toast.error("Tu sesión de Google ha expirado", {
+            description: "Por favor, vuelve a activar la sincronización.",
+            action: {
+              label: "Reconectar",
+              onClick: () => login(true)
+            }
+          });
         }
         throw new Error(err.error?.message || "Error al sincronizar");
       }
@@ -516,6 +533,9 @@ export default function DashboardPage() {
           console.log("Event already deleted from Google Calendar");
           return true;
         }
+        if (response.status === 401) {
+          setCalendarToken(null);
+        }
         const err = await response.json();
         throw new Error(err.error?.message || "Error al eliminar de Google Calendar");
       }
@@ -541,7 +561,9 @@ export default function DashboardPage() {
           description: formData.description,
           date: startDateTime,
           duration: parseInt(formData.duration.toString()),
-          location: formData.location
+          location: formData.location,
+          autoReminder: formData.autoReminder,
+          reminderLeadTime: formData.reminderLeadTime
         };
 
         let calendarEventId = "";
@@ -559,6 +581,7 @@ export default function DashboardPage() {
         await addDoc(collection(db, "meetings"), {
           ...meetingData,
           calendarEventId,
+          reminderSent: false,
           createdAt: serverTimestamp()
         });
       }
@@ -570,7 +593,9 @@ export default function DashboardPage() {
         date: "",
         time: "",
         duration: 60,
-        location: ""
+        location: "",
+        autoReminder: true,
+        reminderLeadTime: 60
       }]);
       toast.success("¡Todas las reuniones han sido programadas! 🚀");
     } catch (error) {
@@ -578,6 +603,26 @@ export default function DashboardPage() {
       toast.error("Error al programar las reuniones.");
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleManualReminder = async (meeting: Meeting) => {
+    try {
+      const response = await fetch('/api/cron/meeting-reminders', {
+        headers: {
+          'x-meeting-id': meeting.id
+        }
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        toast.success(`Recordatorio enviado a ${result.emailsSent} usuarios ✨`);
+      } else {
+        toast.error("Error al enviar el recordatorio: " + (result.error || "Error desconocido"));
+      }
+    } catch (error) {
+      console.error("Manual reminder error:", error);
+      toast.error("Error de conexión al enviar el recordatorio");
     }
   };
 
@@ -1227,10 +1272,30 @@ export default function DashboardPage() {
                                   <span className="truncate">{meeting.location}</span>
                                 </div>
                               )}
+                              
+                              {meeting.autoReminder && (
+                                <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${
+                                  meeting.reminderSent 
+                                    ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                                    : "bg-orange-500/10 text-orange-500 border-orange-500/20 animate-pulse"
+                                }`}>
+                                  {meeting.reminderSent ? <Check size={12} /> : <Bell size={12} />}
+                                  {meeting.reminderSent ? "RECORDATORIO ENVIADO" : `PENDIENTE (${meeting.reminderLeadTime || 60}m)`}
+                                </div>
+                              )}
                             </div>
                           </div>
 
                           <div className="flex flex-row md:flex-col gap-2 justify-end">
+                            {meeting.autoReminder && !meeting.reminderSent && (
+                              <button 
+                                onClick={() => handleManualReminder(meeting)}
+                                className="bg-foreground text-background p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 text-[10px] font-black"
+                                title="Enviar recordatorio ahora"
+                              >
+                                <Send size={16} /> ENVIAR AHORA
+                              </button>
+                            )}
                             <a 
                               href={generateGoogleCalendarUrl(meeting)} 
                               target="_blank" 
@@ -1375,13 +1440,51 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Descripción</label>
                       <textarea 
-                        rows={1}
+                        rows={2}
                         placeholder="Opcional..."
-                        className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-medium resize-none text-[11px]"
+                        className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-medium resize-none text-[11px]"
                         value={formData.description}
                         onChange={(e) => updateMeetingSlot(index, { description: e.target.value })}
                         disabled={isSyncing}
                       />
+                    </div>
+
+                    <div className="bg-white/5 p-5 rounded-[1.5rem] border border-white/5 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <label className="text-[10px] font-black tracking-widest uppercase text-accent/80">Recordatorio por Email</label>
+                          <span className="text-[8px] text-muted-foreground">Notificar a todos los usuarios</span>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => updateMeetingSlot(index, { autoReminder: !formData.autoReminder })}
+                          className={`w-12 h-6 rounded-full p-1 transition-all ${formData.autoReminder ? 'bg-accent' : 'bg-muted/30'}`}
+                        >
+                          <div className={`w-4 h-4 bg-white rounded-full transition-transform ${formData.autoReminder ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+
+                      {formData.autoReminder && (
+                        <div className="animate-in slide-in-from-top-2 duration-300">
+                          <label className="text-[9px] font-bold text-muted-foreground mb-2 block">¿Con cuánta antelación?</label>
+                          <div className="grid grid-cols-4 gap-2">
+                            {[15, 30, 60, 120].map((mins) => (
+                              <button
+                                key={mins}
+                                type="button"
+                                onClick={() => updateMeetingSlot(index, { reminderLeadTime: mins })}
+                                className={`py-2 rounded-lg text-[9px] font-black border transition-all ${
+                                  formData.reminderLeadTime === mins 
+                                    ? "bg-accent text-accent-foreground border-accent" 
+                                    : "bg-background/20 border-white/5 text-muted-foreground hover:bg-white/5"
+                                }`}
+                              >
+                                {mins >= 60 ? `${mins/60}H` : `${mins}M`}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

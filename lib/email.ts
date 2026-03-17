@@ -421,3 +421,174 @@ export async function sendUnbanEmail(toEmail: string, userName: string) {
     return { success: false };
   }
 }
+
+/**
+ * Sends a stylized invitation for a club meeting.
+ */
+export async function sendMeetingInvitation(
+  toEmail: string,
+  userName: string,
+  meeting: {
+    title: string;
+    description: string;
+    date: Date;
+    duration: number;
+    location: string;
+  }
+) {
+  if (!gmailUser || !gmailPass) {
+    console.warn("Gmail credentials missing. Email not sent.");
+    return { success: false, error: "Configuración de correo incompleta." };
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user: gmailUser, pass: gmailPass },
+  });
+
+  const formattedDate = meeting.date.toLocaleDateString('es-ES', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long' 
+  });
+  const formattedTime = meeting.date.toLocaleTimeString('es-ES', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+
+  const isPresencial = !meeting.location.toLowerCase().includes('meet') && 
+                       !meeting.location.toLowerCase().includes('zoom') &&
+                       !meeting.location.toLowerCase().includes('http');
+
+  const mailOptions = {
+    from: `"Hablar Paja BC" <${gmailUser}>`,
+    to: toEmail,
+    subject: `🚀 Recordatorio: Hoy nos reunimos - ${meeting.title}`,
+    html: `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Outfit:wght@400;600;800&display=swap');
+            body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Outfit', sans-serif; }
+            .card { max-width: 600px; margin: 40px auto; background: white; border-radius: 40px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.08); border: 1px solid #edf2f7; }
+            .header { 
+              padding: 60px 40px; 
+              background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); 
+              color: white; 
+              text-align: center;
+              position: relative;
+            }
+            .content { padding: 50px 40px; text-align: center; }
+            .tag { 
+              background: rgba(255,255,255,0.2); 
+              padding: 6px 16px; 
+              border-radius: 100px; 
+              font-size: 10px; 
+              font-weight: 800; 
+              text-transform: uppercase; 
+              letter-spacing: 0.15em;
+              display: inline-block;
+              margin-bottom: 20px;
+            }
+            .meeting-title { font-size: 32px; font-weight: 800; margin: 0; line-height: 1.2; letter-spacing: -0.02em; }
+            
+            .details-grid { 
+              display: table;
+              width: 100%;
+              margin: 40px 0;
+              border-collapse: separate;
+              border-spacing: 12px 0;
+            }
+            .detail-item { 
+              display: table-cell;
+              background: #f8fafc;
+              padding: 24px;
+              border-radius: 24px;
+              width: 50%;
+              border: 1px solid #edf2f7;
+            }
+            .detail-label { font-size: 10px; font-bold uppercase; tracking-widest text-[#718096]; margin-bottom: 8px; display: block; }
+            .detail-value { font-size: 16px; font-weight: 800; color: #1a1a1a; margin: 0; }
+            
+            .location-box {
+              background: ${isPresencial ? '#fffaf0' : '#ebf8ff'};
+              border: 1px solid ${isPresencial ? '#feebc8' : '#bee3f8'};
+              padding: 32px;
+              border-radius: 32px;
+              margin-bottom: 40px;
+            }
+            .location-title { font-size: 14px; font-weight: 800; color: ${isPresencial ? '#9c4221' : '#2b6cb0'}; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+            .location-text { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 24px; }
+            
+            .btn { 
+              background: #25D366; 
+              color: white !important; 
+              padding: 20px 40px; 
+              border-radius: 20px; 
+              text-decoration: none; 
+              font-weight: 800; 
+              font-size: 16px; 
+              display: inline-block;
+              box-shadow: 0 15px 30px rgba(37, 211, 102, 0.25);
+            }
+            
+            .footer { padding: 40px; text-align: center; background: #fafbfc; font-size: 12px; color: #94a3b8; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="header">
+              <span class="tag">Recordatorio de Sesión</span>
+              <h1 class="meeting-title">${meeting.title}</h1>
+            </div>
+            
+            <div class="content">
+              <p style="font-size: 18px; color: #4a5568; line-height: 1.6; margin-bottom: 32px;">
+                ¡Hola ${userName}! Ya casi es hora de nuestra cita para hablar paja literaria.
+              </p>
+              
+              <div class="details-grid">
+                <div class="detail-item">
+                  <span class="detail-label">CUÁNDO</span>
+                  <p class="detail-value" style="text-transform: capitalize;">${formattedDate}</p>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">HORA</span>
+                  <p class="detail-value">${formattedTime}</p>
+                </div>
+              </div>
+              
+              <div class="location-box">
+                <p class="location-title">${isPresencial ? '📍 Encuentro Presencial' : '💻 Sesión Virtual'}</p>
+                <p class="location-text">${meeting.location}</p>
+                ${!isPresencial ? `<a href="${meeting.location}" class="btn">Unirme a la reunión</a>` : '<p style="font-size: 14px; color: #718096; margin:0;">¡Nos vemos en el punto de encuentro!</p>'}
+              </div>
+              
+              <p style="font-family: 'Crimson Pro', serif; font-size: 18px; color: #1a1a1a; font-style: italic; margin-bottom: 40px;">
+                "${meeting.description || 'Prepara tu café y tus mejores argumentos. ¡Te esperamos!'}"
+              </p>
+              
+              <p style="font-size: 13px; color: #94a3b8;">
+                Recuerda que estas sesiones duran aproximadamente ${meeting.duration} minutos.
+              </p>
+            </div>
+            
+            <div class="footer">
+              Hablar Paja Book Club • Comunidad de Lectores<br/>
+              © 2026 Todos los derechos reservados.
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending meeting invitation:", error);
+    return { success: false };
+  }
+}
