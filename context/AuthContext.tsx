@@ -37,9 +37,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [banNotice, setBanNotice] = useState<BanNotice | null>(null);
-  const [calendarToken, setCalendarToken] = useState<string | null>(null);
+  const [calendarToken, setCalendarToken_] = useState<string | null>(null);
+
+  // Wrapper for token storage
+  const setCalendarToken = (token: string | null) => {
+    setCalendarToken_(token);
+    if (token) {
+      localStorage.setItem('google_calendar_token', token);
+    } else {
+      localStorage.removeItem('google_calendar_token');
+    }
+  };
 
   useEffect(() => {
+    // Recover token on mount
+    const storedToken = localStorage.getItem('google_calendar_token');
+    if (storedToken) setCalendarToken_(storedToken);
+
     if (!auth) {
       console.warn("Firebase Auth not initialized. Check environment variables.");
       setTimeout(() => setLoading(false), 0);
@@ -189,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
       setBanNotice(null);
+      setCalendarToken(null);
     } catch (error) {
       console.error("Logout failed:", error);
     }

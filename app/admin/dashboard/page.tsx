@@ -108,6 +108,7 @@ interface Meeting {
   date: any;
   duration: number;
   location: string;
+  calendarEventId?: string;
   createdAt?: any;
 }
 
@@ -440,7 +441,7 @@ export default function DashboardPage() {
   const syncToGoogleCalendar = async (meeting: any) => {
     if (!calendarToken) {
       toast.error("No hay token de calendario. Por favor, re-autentícate.");
-      return false;
+      return null;
     }
 
     try {
@@ -479,11 +480,49 @@ export default function DashboardPage() {
         throw new Error(err.error?.message || "Error al sincronizar");
       }
 
-      toast.success("¡Sincronizado directamente con Google Calendar! ✨");
-      return true;
+      const data = await response.json();
+      if (data.htmlLink) {
+        toast.success("¡Sincronizado con Google Calendar! ✨", {
+          description: "Haz clic para ver el evento",
+          action: {
+            label: "Ver Evento",
+            onClick: () => window.open(data.htmlLink, "_blank")
+          }
+        });
+      } else {
+        toast.success("¡Sincronizado directamente con Google Calendar! ✨");
+      }
+      return data.id; // Return the event ID
     } catch (error: any) {
       console.error("Calendar sync error:", error);
       toast.error(`Error de sincronización: ${error.message}`);
+      return null;
+    }
+  };
+
+  const deleteFromGoogleCalendar = async (eventId: string) => {
+    if (!calendarToken) return false;
+
+    try {
+      const response = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${calendarToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log("Event already deleted from Google Calendar");
+          return true;
+        }
+        const err = await response.json();
+        throw new Error(err.error?.message || "Error al eliminar de Google Calendar");
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Google Calendar delete error:", error);
       return false;
     }
   };
@@ -505,20 +544,23 @@ export default function DashboardPage() {
           location: formData.location
         };
 
-        await addDoc(collection(db, "meetings"), {
-          ...meetingData,
-          createdAt: serverTimestamp()
-        });
-
+        let calendarEventId = "";
         // Try automatic sync if token is available
         if (calendarToken) {
-          await syncToGoogleCalendar(meetingData);
+          const syncId = await syncToGoogleCalendar(meetingData);
+          if (syncId) calendarEventId = syncId;
         } else {
           // Fallback to manual link if no token
           const calendarUrl = generateGoogleCalendarUrl(meetingData as any);
           window.open(calendarUrl, "_blank");
           toast.info(`Calendario abierto para: ${formData.title}`);
         }
+
+        await addDoc(collection(db, "meetings"), {
+          ...meetingData,
+          calendarEventId,
+          createdAt: serverTimestamp()
+        });
       }
 
       setIsMeetingModalOpen(false);
@@ -541,7 +583,15 @@ export default function DashboardPage() {
 
   const handleDeleteMeeting = async (id: string) => {
     if (!db || !confirm("¿Estás seguro de que quieres eliminar esta reunión?")) return;
+    
     try {
+      // Find the meeting to get the calendarEventId
+      const meeting = meetings.find(m => m.id === id);
+      
+      if (meeting?.calendarEventId && calendarToken) {
+        await deleteFromGoogleCalendar(meeting.calendarEventId);
+      }
+
       await deleteDoc(doc(db, "meetings", id));
       toast.success("Reunión eliminada");
     } catch (error) {
