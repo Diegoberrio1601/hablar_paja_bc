@@ -143,7 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth || isAuthenticating) return;
 
     if (requestCalendar) {
-      googleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+      googleProvider.addScope('https://www.googleapis.com/auth/calendar');
     }
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);

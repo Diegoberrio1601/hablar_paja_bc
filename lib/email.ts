@@ -422,19 +422,22 @@ export async function sendUnbanEmail(toEmail: string, userName: string) {
   }
 }
 
+interface Meeting {
+  title: string;
+  description: string;
+  date: Date;
+  duration: number;
+  location: string;
+  meetLink?: string;
+}
+
 /**
  * Sends a stylized invitation for a club meeting.
  */
 export async function sendMeetingInvitation(
   toEmail: string,
   userName: string,
-  meeting: {
-    title: string;
-    description: string;
-    date: Date;
-    duration: number;
-    location: string;
-  }
+  meeting: Meeting
 ) {
   if (!gmailUser || !gmailPass) {
     console.warn("Gmail credentials missing. Email not sent.");
@@ -456,132 +459,259 @@ export async function sendMeetingInvitation(
     minute: '2-digit' 
   });
 
-  const isPresencial = !meeting.location.toLowerCase().includes('meet') && 
-                       !meeting.location.toLowerCase().includes('zoom') &&
-                       !meeting.location.toLowerCase().includes('http');
+  const getValidUrl = (str: string) => {
+    try {
+      if (!str.startsWith('http') && (str.includes('.') || str.includes('meet.google.com'))) {
+        str = 'https://' + str;
+      }
+      new URL(str);
+      return str;
+    } catch {
+      return null;
+    }
+  };
+
+  const validatedUrl = getValidUrl(meeting.location);
+  const isVirtualKeyword = meeting.location.toLowerCase().includes('meet') || 
+                           meeting.location.toLowerCase().includes('zoom') ||
+                           meeting.location.toLowerCase().includes('teams');
+  
+  const isPresencial = !validatedUrl && !isVirtualKeyword && !meeting.meetLink;
+  const showLink = !!validatedUrl || isVirtualKeyword || !!meeting.meetLink;
+  const finalLink = meeting.meetLink || validatedUrl || (isVirtualKeyword ? `https://${meeting.location}` : meeting.location);
+
+  const subjectOptions = [
+    `🚀 ¡No te quedes con las ganas! Hoy hablamos paja: ${meeting.title}`,
+    `🔥 Se prendió esto: Hoy nos vemos para ${meeting.title}`,
+    `😏 ¿Estás list@? Hoy toca sesión de la buena: ${meeting.title}`,
+    `🌈 ¡Que no se te pase! Hoy tenemos una cita: ${meeting.title}`
+  ];
+  const randomSubject = subjectOptions[Math.floor(Math.random() * subjectOptions.length)];
 
   const mailOptions = {
     from: `"Hablar Paja BC" <${gmailUser}>`,
     to: toEmail,
-    subject: `🚀 Recordatorio: Hoy nos reunimos - ${meeting.title}`,
+    subject: randomSubject,
     html: `
       <!DOCTYPE html>
       <html>
         <head>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@700&family=Outfit:wght@400;600;800&display=swap');
-            body { margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Outfit', sans-serif; }
-            .card { max-width: 600px; margin: 40px auto; background: white; border-radius: 40px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.08); border: 1px solid #edf2f7; }
-            .header { 
-              padding: 60px 40px; 
-              background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); 
-              color: white; 
+            body { margin: 0; padding: 0; background-color: #f0f2f5; font-family: 'Outfit', system-ui, sans-serif; }
+            .wrapper { width: 100%; table-layout: fixed; background: linear-gradient(135deg, #f0f2f5 0%, #e6e9f0 100%); padding: 60px 0; }
+            .main-card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 48px; overflow: hidden; box-shadow: 0 40px 100px -20px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.8); }
+            
+            .vibrant-header { 
+              padding: 70px 40px; 
+              text-align: center; 
+              background: linear-gradient(135deg, #FF3366 0%, #FF6633 100%);
+              color: white;
+              position: relative;
+              overflow: hidden;
+            }
+            .vibrant-header::after {
+              content: '';
+              position: absolute;
+              bottom: -50px; left: -10%; width: 120%; height: 100px;
+              background: white;
+              border-radius: 100%;
+            }
+            .logo-badge { 
+              background: rgba(255,255,255,0.2); 
+              padding: 12px 24px; 
+              border-radius: 100px; 
+              display: inline-block;
+              backdrop-filter: blur(10px);
+              border: 1px solid rgba(255,255,255,0.3);
+              margin-bottom: 24px;
+            }
+            .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0; color: white; }
+            
+            .content { padding: 40px 50px 60px 50px; text-align: center; }
+            .hero-title { font-size: 38px; font-weight: 800; color: #1a1a1a; margin-bottom: 24px; line-height: 1.1; letter-spacing: -0.03em; }
+            .hero-sub { font-size: 18px; color: #4a5568; line-height: 1.6; margin-bottom: 40px; }
+            
+            .meeting-box { 
+              background: #f8fafc;
+              border-radius: 40px;
+              padding: 48px;
+              margin-bottom: 48px;
+              border: 2px solid #edf2f7;
+              position: relative;
+              overflow: hidden;
+              text-align: left;
+            }
+            .meeting-box::before {
+              content: '';
+              position: absolute;
+              top: 0; left: 0; width: 8px; height: 100%;
+              background: #FF3366;
+            }
+            
+            .tag { 
+              font-size: 11px; 
+              font-weight: 800; 
+              text-transform: uppercase; 
+              letter-spacing: 0.2em; 
+              color: #FF3366; 
+              margin-bottom: 16px; 
+              display: block; 
+            }
+            
+            .details-grid { 
+              margin: 32px 0;
+            }
+            .detail-item { 
+              background: white;
+              padding: 20px;
+              border-radius: 24px;
+              margin-bottom: 12px;
+              border: 1px solid #edf2f7;
+              display: flex;
+              align-items: center;
+            }
+            .detail-icon { font-size: 24px; margin-right: 16px; }
+            .detail-text { flex: 1; }
+            .detail-label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; display: block; }
+            .detail-value { font-size: 16px; font-weight: 700; color: #1a1a1a; margin: 2px 0 0 0; }
+            
+            .location-card {
+              background: ${isPresencial ? '#fff5f7' : '#f0f9ff'};
+              border: 1px solid ${isPresencial ? '#fed7e2' : '#bae6fd'};
+              padding: 28px;
+              border-radius: 32px;
+              margin: 32px 0;
+            }
+            .location-title { font-size: 12px; font-weight: 800; color: ${isPresencial ? '#b83280' : '#0369a1'}; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+            .location-text { font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 20px; display: block; }
+            
+            .btn { 
+              background: linear-gradient(135deg, #FF3366 0%, #FF6633 100%);
+              color: white !important; 
+              padding: 22px 48px; 
+              border-radius: 24px; 
+              text-decoration: none; 
+              font-weight: 800; 
+              font-size: 17px; 
+              display: inline-block; 
+              box-shadow: 0 20px 40px rgba(255, 51, 102, 0.3);
+              text-align: center;
+              width: 100%;
+              box-sizing: border-box;
+            }
+            
+            .vibrant-quote {
+              background: #1a1a1a;
+              color: white;
+              padding: 40px;
+              border-radius: 32px;
+              margin-top: 40px;
               text-align: center;
               position: relative;
             }
-            .content { padding: 50px 40px; text-align: center; }
-            .tag { 
-              background: rgba(255,255,255,0.2); 
-              padding: 6px 16px; 
-              border-radius: 100px; 
-              font-size: 10px; 
-              font-weight: 800; 
-              text-transform: uppercase; 
-              letter-spacing: 0.15em;
-              display: inline-block;
-              margin-bottom: 20px;
-            }
-            .meeting-title { font-size: 32px; font-weight: 800; margin: 0; line-height: 1.2; letter-spacing: -0.02em; }
+            .quote-mark { font-size: 60px; color: #FF3366; position: absolute; top: -10px; left: 20px; opacity: 0.5; font-family: 'Crimson Pro', serif; }
+            .quote-text { font-family: 'Crimson Pro', serif; font-size: 20px; font-style: italic; line-height: 1.5; margin: 0; position: relative; z-index: 1; }
             
-            .details-grid { 
-              display: table;
-              width: 100%;
-              margin: 40px 0;
-              border-collapse: separate;
-              border-spacing: 12px 0;
-            }
-            .detail-item { 
-              display: table-cell;
-              background: #f8fafc;
-              padding: 24px;
-              border-radius: 24px;
-              width: 50%;
-              border: 1px solid #edf2f7;
-            }
-            .detail-label { font-size: 10px; font-bold uppercase; tracking-widest text-[#718096]; margin-bottom: 8px; display: block; }
-            .detail-value { font-size: 16px; font-weight: 800; color: #1a1a1a; margin: 0; }
-            
-            .location-box {
-              background: ${isPresencial ? '#fffaf0' : '#ebf8ff'};
-              border: 1px solid ${isPresencial ? '#feebc8' : '#bee3f8'};
-              padding: 32px;
-              border-radius: 32px;
-              margin-bottom: 40px;
-            }
-            .location-title { font-size: 14px; font-weight: 800; color: ${isPresencial ? '#9c4221' : '#2b6cb0'}; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
-            .location-text { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 24px; }
-            
-            .btn { 
-              background: #25D366; 
-              color: white !important; 
-              padding: 20px 40px; 
-              border-radius: 20px; 
+            .footer { padding: 60px 40px; text-align: center; background-color: #fafbfc; }
+            .social-links { margin-bottom: 32px; }
+            .social-a { 
+              background: white; 
+              color: #1a1a1a; 
               text-decoration: none; 
               font-weight: 800; 
-              font-size: 16px; 
-              display: inline-block;
-              box-shadow: 0 15px 30px rgba(37, 211, 102, 0.25);
+              font-size: 12px; 
+              padding: 10px 20px; 
+              border-radius: 100px; 
+              border: 1px solid #edf2f7;
+              margin: 0 5px;
             }
-            
-            .footer { padding: 40px; text-align: center; background: #fafbfc; font-size: 12px; color: #94a3b8; }
+            .footer-credit { font-size: 12px; color: #94a3b8; font-weight: 600; line-height: 1.8; text-transform: uppercase; letter-spacing: 0.1em; }
           </style>
         </head>
         <body>
-          <div class="card">
-            <div class="header">
-              <span class="tag">Recordatorio de Sesión</span>
-              <h1 class="meeting-title">${meeting.title}</h1>
-            </div>
-            
-            <div class="content">
-              <p style="font-size: 18px; color: #4a5568; line-height: 1.6; margin-bottom: 32px;">
-                ¡Hola ${userName}! Ya casi es hora de nuestra cita para hablar paja literaria.
-              </p>
-              
-              <div class="details-grid">
-                <div class="detail-item">
-                  <span class="detail-label">CUÁNDO</span>
-                  <p class="detail-value" style="text-transform: capitalize;">${formattedDate}</p>
+          <div class="wrapper">
+            <div class="main-card">
+              <div class="vibrant-header">
+                <div class="logo-badge">
+                  <p class="logo-text">Hablar Paja BC</p>
                 </div>
-                <div class="detail-item">
-                  <span class="detail-label">HORA</span>
-                  <p class="detail-value">${formattedTime}</p>
-                </div>
+                <p style="margin:0; font-weight:700; opacity:0.9; font-size:14px; text-transform:uppercase; letter-spacing:0.1em;">¿Estás list@ para lo que viene? 😏</p>
               </div>
               
-              <div class="location-box">
-                <p class="location-title">${isPresencial ? '📍 Encuentro Presencial' : '💻 Sesión Virtual'}</p>
-                <p class="location-text">${meeting.location}</p>
-                ${!isPresencial ? `<a href="${meeting.location}" class="btn">Unirme a la reunión</a>` : '<p style="font-size: 14px; color: #718096; margin:0;">¡Nos vemos en el punto de encuentro!</p>'}
+              <div class="content">
+                <h1 class="hero-title">¡Hoy el cuerpo pide...<br/>hablar paja! 🚀</h1>
+                <p class="hero-sub">Hola <strong>${userName}</strong>, no nos dejes esperando. Tenemos una cita pendiente y ya sabes que aquí nadie se queda con las ganas de soltarlo todo.</p>
+                
+                <div class="meeting-box">
+                  <span class="tag">Detalles de la sesión</span>
+                  <h2 style="font-size: 26px; font-weight: 800; color: #1a1a1a; margin: 0 0 24px 0;">${meeting.title}</h2>
+                  
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <span class="detail-icon">📅</span>
+                      <div class="detail-text">
+                        <span class="detail-label">Cuándo</span>
+                        <p class="detail-value" style="text-transform: capitalize;">${formattedDate}</p>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-icon">⏰</span>
+                      <div class="detail-text">
+                        <span class="detail-label">A qué hora toca</span>
+                        <p class="detail-value">${formattedTime}</p>
+                      </div>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-icon">⏳</span>
+                      <div class="detail-text">
+                        <span class="detail-label">Duración aproximada</span>
+                        <p class="detail-value">${meeting.duration} minutos de puro placer literario</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="location-card">
+                    <p class="location-title">${isPresencial ? '📍 Donde nos vemos' : '💻 El canal del pecado (virtual)'}</p>
+                    <span class="location-text">${meeting.location}</span>
+                    ${showLink ? `<a href="${finalLink}" class="btn">Entrar ahora</a>` : (isPresencial ? '<p style="font-size: 14px; color: #718096; margin:0; font-weight: 600;">¡Pórtate bien y llega puntual! 🫦</p>' : '')}
+                  </div>
+                  
+                  <div class="vibrant-quote">
+                    <span class="quote-mark">“</span>
+                    <p class="quote-text">
+                      "${meeting.description || 'Prepara tu mente, tu café y tus mejores argumentos. El ritmo lo pones tú, nosotros solo ponemos el fuego.'}"
+                    </p>
+                  </div>
+                </div>
+
+                <p style="color: #4a5568; font-size: 16px; line-height: 1.7; margin-bottom: 40px; font-weight: 600; font-style: italic;">
+                  Recuerda: Una buena paja (literaria) compartida sabe mucho mejor. 😉
+                </p>
+
+                <hr style="border: 0; height: 1px; background: #edf2f7; margin-bottom: 40px;">
+                
+                <p style="font-size: 13px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
+                  ¿No puedes venir? Te la pierdes. Pero avisa si te atreves.
+                </p>
               </div>
-              
-              <p style="font-family: 'Crimson Pro', serif; font-size: 18px; color: #1a1a1a; font-style: italic; margin-bottom: 40px;">
-                "${meeting.description || 'Prepara tu café y tus mejores argumentos. ¡Te esperamos!'}"
-              </p>
-              
-              <p style="font-size: 13px; color: #94a3b8;">
-                Recuerda que estas sesiones duran aproximadamente ${meeting.duration} minutos.
-              </p>
-            </div>
-            
-            <div class="footer">
-              Hablar Paja Book Club • Comunidad de Lectores<br/>
-              © 2026 Todos los derechos reservados.
+
+              <div class="footer">
+                <div class="social-links">
+                  <a href="https://www.instagram.com/hablarpajabc/" class="social-a">Instagram</a>
+                  <a href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ" class="social-a">Spotify</a>
+                  <a href="https://www.youtube.com/@hablarpajabc05" class="social-a">YouTube</a>
+                </div>
+                <p class="footer-credit">
+                  © 2026 HABLAR PAJA BOOK CLUB<br/>
+                  HECHO CON CARIÑO Y MUCHA PICARDÍA. 🌈✨
+                </p>
+              </div>
             </div>
           </div>
         </body>
       </html>
-    `
+    `,
   };
 
   try {

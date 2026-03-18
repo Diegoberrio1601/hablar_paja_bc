@@ -52,6 +52,43 @@ import {
 import Skeleton from "@/components/Skeleton";
 import { incrementDownloadCount } from "@/app/actions/library-actions";
 
+const CountdownTimer = ({ targetDate, reminderLeadTime }: { targetDate: any, reminderLeadTime: number }) => {
+  const [timeLeft, setTimeLeft] = useState<string>("");
+  const [isDue, setIsDue] = useState(false);
+
+  useEffect(() => {
+    const calculateTime = () => {
+      const now = new Date().getTime();
+      const meetingDate = targetDate.seconds ? new Date(targetDate.seconds * 1000).getTime() : new Date(targetDate).getTime();
+      const reminderTime = meetingDate - (reminderLeadTime * 60000);
+      const difference = reminderTime - now;
+
+      if (difference <= 0) {
+        setTimeLeft("¡YA!");
+        setIsDue(true);
+        return;
+      }
+
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+      } else {
+        setTimeLeft(`${hours > 0 ? hours + "h " : ""}${minutes}m ${seconds}s`);
+      }
+    };
+
+    const timer = setInterval(calculateTime, 1000);
+    calculateTime();
+    return () => clearInterval(timer);
+  }, [targetDate, reminderLeadTime]);
+
+  return <span className={isDue ? "text-red-400 animate-pulse" : ""}>{timeLeft}</span>;
+};
+
 // Helper for skeleton rows
 const TableSkeleton = ({ rows = 5, cols = 3 }: { rows?: number, cols?: number }) => (
   <div className="w-full animate-in fade-in duration-300">
@@ -111,7 +148,9 @@ interface Meeting {
   date: any;
   duration: number;
   location: string;
+  isVirtual?: boolean;
   calendarEventId?: string;
+  meetLink?: string;
   reminderSent?: boolean;
   autoReminder?: boolean;
   reminderLeadTime?: number;
@@ -130,10 +169,12 @@ export default function DashboardPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [users, setUsers] = useState<UserData[]>([]);
   const [comments, setComments] = useState<CommentData[]>([]);
+  const [usersCount, setUsersCount] = useState<number>(0);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [sendingMeetingId, setSendingMeetingId] = useState<string | null>(null);
 
   // Modal States
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
@@ -151,6 +192,7 @@ export default function DashboardPage() {
     date: "",
     time: "",
     duration: 60,
+    isVirtual: true,
     location: "",
     autoReminder: true,
     reminderLeadTime: 60
@@ -163,6 +205,7 @@ export default function DashboardPage() {
       date: "",
       time: "",
       duration: 60,
+      isVirtual: true,
       location: "",
       autoReminder: true,
       reminderLeadTime: 60
@@ -431,38 +474,65 @@ export default function DashboardPage() {
   };
 
   const generateGoogleCalendarUrl = (meeting: Meeting) => {
-    // meeting.date might be a Firestore Timestamp or a Date object during creation
     const startDate = meeting.date.seconds ? new Date(meeting.date.seconds * 1000) : meeting.date;
     const endDate = new Date(startDate.getTime() + meeting.duration * 60000);
     
     const formatTime = (date: Date) => date.toISOString().replace(/-|:|\.\d\d\d/g, "");
     
+    // Check if location is a URL
+    const isUrl = meeting.location.startsWith('http');
+    const locationValue = isUrl ? meeting.location : meeting.location;
+    const detailsValue = isUrl ? `${meeting.description}\n\nLink de la reunión: ${meeting.location}` : meeting.description;
+
     const url = new URL("https://www.google.com/calendar/render");
     url.searchParams.append("action", "TEMPLATE");
     url.searchParams.append("text", meeting.title);
     url.searchParams.append("dates", `${formatTime(startDate)}/${formatTime(endDate)}`);
-    url.searchParams.append("details", meeting.description);
-    url.searchParams.append("location", meeting.location);
+    url.searchParams.append("details", detailsValue);
+    url.searchParams.append("location", locationValue);
     url.searchParams.append("sf", "true");
     url.searchParams.append("output", "xml");
     
     return url.toString();
   };
 
-  const syncToGoogleCalendar = async (meeting: any) => {
-    if (!calendarToken) {
-      toast.error("No hay token de calendario. Por favor, re-autentícate.");
+  const getValidUrl = (str: string) => {
+    try {
+      if (!str.startsWith('http') && (str.includes('.') || str.includes('meet.google.com'))) {
+        str = 'https://' + str;
+      }
+      new URL(str);
+      return str;
+    } catch {
       return null;
     }
+  };
+
+  const syncToGoogleCalendar = async (meeting: any): Promise<{ id: string, meetLink: string } | null> => {
+    if (!calendarToken) {
+      toast.error("Sincronización no activa", {
+        description: "Activa la sincronización con Google Calendar primero.",
+        action: { label: "Activar", onClick: () => login(true) }
+      });
+      return null;
+    }
+
+    const promptReauth = (reason: string) => {
+      setCalendarToken(null);
+      toast.error(reason, {
+        description: "Tu sesión de Google ha vencido o no tiene permisos suficientes.",
+        duration: 10000,
+        action: { label: "🔑 Renovar acceso", onClick: () => login(true) }
+      });
+    };
 
     try {
       const startDate = meeting.date;
       const endDate = new Date(startDate.getTime() + (meeting.duration || 60) * 60000);
 
-      const event = {
+      const event: any = {
         summary: meeting.title,
-        description: meeting.description,
-        location: meeting.location,
+        description: meeting.description || "",
         start: {
           dateTime: startDate.toISOString(),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -473,46 +543,69 @@ export default function DashboardPage() {
         },
       };
 
-      const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${calendarToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(event),
-      });
+      // For in-person meetings, add location. For virtual, always create a Meet link.
+      if (!meeting.isVirtual && meeting.location) {
+        event.location = meeting.location;
+      } else {
+        // Always request a real Google Meet link for virtual meetings
+        event.conferenceData = {
+          createRequest: {
+            requestId: `hpbc-${meeting.title.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
+            conferenceSolutionKey: { type: 'hangoutsMeet' }
+          }
+        };
+      }
+
+      const response = await fetch(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${calendarToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(event),
+        }
+      );
+
+      if (response.status === 401) {
+        promptReauth("Token de Google vencido");
+        throw new Error("Token vencido. Por favor renueva el acceso.");
+      }
+
+      if (response.status === 403) {
+        promptReauth("Permisos insuficientes de Google");
+        throw new Error("Permisos insuficientes. Por favor renueva el acceso.");
+      }
 
       if (!response.ok) {
         const err = await response.json();
-        if (response.status === 401) {
-          setCalendarToken(null);
-          toast.error("Tu sesión de Google ha expirado", {
-            description: "Por favor, vuelve a activar la sincronización.",
-            action: {
-              label: "Reconectar",
-              onClick: () => login(true)
-            }
-          });
-        }
-        throw new Error(err.error?.message || "Error al sincronizar");
+        throw new Error(err.error?.message || "Error al sincronizar con Google Calendar");
       }
 
       const data = await response.json();
-      if (data.htmlLink) {
-        toast.success("¡Sincronizado con Google Calendar! ✨", {
-          description: "Haz clic para ver el evento",
-          action: {
-            label: "Ver Evento",
-            onClick: () => window.open(data.htmlLink, "_blank")
-          }
-        });
-      } else {
-        toast.success("¡Sincronizado directamente con Google Calendar! ✨");
-      }
-      return data.id; // Return the event ID
+      // Extract real Meet link from the response
+      const meetLink =
+        data.hangoutsLink ||
+        data.conferenceData?.entryPoints?.find((ep: any) => ep.entryPointType === "video")?.uri ||
+        "";
+
+      toast.success(
+        meetLink ? "¡Evento creado con Meet! 🎉" : "¡Evento creado en Google Calendar! ✨",
+        {
+          description: meetLink ? `Link: ${meetLink}` : "El evento fue añadido a tu calendario.",
+          action: data.htmlLink
+            ? { label: "Ver Evento", onClick: () => window.open(data.htmlLink, "_blank") }
+            : undefined
+        }
+      );
+
+      return { id: data.id, meetLink };
     } catch (error: any) {
       console.error("Calendar sync error:", error);
-      toast.error(`Error de sincronización: ${error.message}`);
+      if (!error.message.includes("Token vencido") && !error.message.includes("Permisos")) {
+        toast.error(`Error de sincronización: ${error.message}`);
+      }
       return null;
     }
   };
@@ -561,18 +654,22 @@ export default function DashboardPage() {
           description: formData.description,
           date: startDateTime,
           duration: parseInt(formData.duration.toString()),
-          location: formData.location,
+          isVirtual: formData.isVirtual,
+          location: formData.isVirtual ? "" : formData.location,
           autoReminder: formData.autoReminder,
           reminderLeadTime: formData.reminderLeadTime
         };
 
         let calendarEventId = "";
-        // Try automatic sync if token is available
+        let meetLink = "";
+        
         if (calendarToken) {
-          const syncId = await syncToGoogleCalendar(meetingData);
-          if (syncId) calendarEventId = syncId;
+          const syncResult = await syncToGoogleCalendar(meetingData);
+          if (syncResult) {
+            calendarEventId = syncResult.id;
+            meetLink = syncResult.meetLink;
+          }
         } else {
-          // Fallback to manual link if no token
           const calendarUrl = generateGoogleCalendarUrl(meetingData as any);
           window.open(calendarUrl, "_blank");
           toast.info(`Calendario abierto para: ${formData.title}`);
@@ -581,6 +678,7 @@ export default function DashboardPage() {
         await addDoc(collection(db, "meetings"), {
           ...meetingData,
           calendarEventId,
+          meetLink,
           reminderSent: false,
           createdAt: serverTimestamp()
         });
@@ -593,6 +691,7 @@ export default function DashboardPage() {
         date: "",
         time: "",
         duration: 60,
+        isVirtual: true,
         location: "",
         autoReminder: true,
         reminderLeadTime: 60
@@ -607,22 +706,46 @@ export default function DashboardPage() {
   };
 
   const handleManualReminder = async (meeting: Meeting) => {
+    if (meeting.reminderSent) {
+      toast.info("Este recordatorio ya fue enviado.");
+      return;
+    }
+
+    setSendingMeetingId(meeting.id);
     try {
-      const response = await fetch('/api/cron/meeting-reminders', {
-        headers: {
-          'x-meeting-id': meeting.id
-        }
-      });
+      const response = await fetch(`/api/cron/meeting-reminders?meetingId=${meeting.id}`);
       
+      if (!response.ok) {
+        let errorMsg = "Error del servidor";
+        try {
+          const errData = await response.json();
+          errorMsg = errData.error || errData.message || errorMsg;
+        } catch (e) {
+          errorMsg = await response.text() || errorMsg;
+        }
+        toast.error("Error al enviar el recordatorio: " + errorMsg);
+        return;
+      }
+
       const result = await response.json();
       if (result.success) {
-        toast.success(`Recordatorio enviado a ${result.emailsSent} usuarios ✨`);
+        if (result.alreadySent) {
+          toast.info("Este recordatorio ya había sido enviado previamente.");
+        } else {
+          toast.success(`Recordatorio enviado a ${result.emailsSent} usuarios ✨`);
+        }
       } else {
         toast.error("Error al enviar el recordatorio: " + (result.error || "Error desconocido"));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Manual reminder error:", error);
-      toast.error("Error de conexión al enviar el recordatorio");
+      if (error.name === 'TypeError' && (error.message === 'Load failed' || error.message === 'Failed to fetch')) {
+        toast.error("Error de red: La petición falló.");
+      } else {
+        toast.error("Error de conexión al enviar el recordatorio");
+      }
+    } finally {
+      setSendingMeetingId(null);
     }
   };
 
@@ -1266,21 +1389,41 @@ export default function DashboardPage() {
                                 <Clock size={14} className="text-accent" />
                                 {new Date(meeting.date.seconds * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })} ({meeting.duration} min)
                               </div>
-                              {meeting.location && (
-                                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-background/50 px-3 py-1.5 rounded-lg border border-border/50 max-w-[200px] truncate">
-                                  <Video size={14} className="text-accent" />
-                                  <span className="truncate">{meeting.location}</span>
-                                </div>
+                              {/* Meeting type badge */}
+                              <div className={`flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-lg border ${
+                                meeting.isVirtual !== false
+                                  ? 'text-accent bg-accent/10 border-accent/20'
+                                  : 'text-muted-foreground bg-background/50 border-border/50'
+                              }`}>
+                                {meeting.isVirtual !== false ? <Video size={14} /> : <Calendar size={14} />}
+                                {meeting.isVirtual !== false ? 'Virtual' : (meeting.location || 'Presencial')}
+                              </div>
+
+                              {/* Meet link badge if available */}
+                              {meeting.meetLink && (
+                                <a
+                                  href={meeting.meetLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-xs font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/20 transition-all"
+                                >
+                                  <ExternalLink size={12} /> ABRIR MEET
+                                </a>
                               )}
                               
                               {meeting.autoReminder && (
-                                <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all ${
-                                  meeting.reminderSent 
-                                    ? "bg-green-500/10 text-green-500 border-green-500/20" 
-                                    : "bg-orange-500/10 text-orange-500 border-orange-500/20 animate-pulse"
-                                }`}>
-                                  {meeting.reminderSent ? <Check size={12} /> : <Bell size={12} />}
-                                  {meeting.reminderSent ? "RECORDATORIO ENVIADO" : `PENDIENTE (${meeting.reminderLeadTime || 60}m)`}
+                                <div className="space-y-3">
+                                  {meeting.reminderSent ? (
+                                    <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all bg-emerald-500/20 text-emerald-500 border-emerald-500/30 shadow-sm shadow-emerald-500/10">
+                                      <Check size={14} strokeWidth={3} />
+                                      RECORDATORIO ENVIADO
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all bg-orange-500/10 text-orange-500 border-orange-500/30">
+                                      <Bell size={14} className="animate-bounce" strokeWidth={3} />
+                                      <span>ENVÍO EN: <CountdownTimer targetDate={meeting.date} reminderLeadTime={meeting.reminderLeadTime || 60} /></span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1288,13 +1431,31 @@ export default function DashboardPage() {
 
                           <div className="flex flex-row md:flex-col gap-2 justify-end">
                             {meeting.autoReminder && !meeting.reminderSent && (
-                              <button 
-                                onClick={() => handleManualReminder(meeting)}
-                                className="bg-foreground text-background p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 text-[10px] font-black"
-                                title="Enviar recordatorio ahora"
-                              >
-                                <Send size={16} /> ENVIAR AHORA
-                              </button>
+                              <div className="relative">
+                                <button 
+                                  onClick={() => handleManualReminder(meeting)}
+                                  disabled={sendingMeetingId === meeting.id}
+                                  className="bg-foreground text-background p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 text-[10px] font-black disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                                >
+                                  {sendingMeetingId === meeting.id ? (
+                                    <Loader2 size={14} className="animate-spin" />
+                                  ) : (
+                                    <Send size={14} />
+                                  )}
+                                  {sendingMeetingId === meeting.id ? "ENVIANDO..." : "ENVIAR AHORA"}
+                                </button>
+                                {/* Tooltip appears ABOVE the button */}
+                                {sendingMeetingId === meeting.id && (
+                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-card border border-border/60 text-foreground text-[10px] px-3 py-2 rounded-xl shadow-2xl whitespace-nowrap z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div className="flex items-center gap-1.5">
+                                      <Loader2 size={10} className="animate-spin text-accent" />
+                                      Esto puede tardar... ¡no se rompió nada!
+                                    </div>
+                                    {/* Arrow pointing down */}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border/60" />
+                                  </div>
+                                )}
+                              </div>
                             )}
                             <a 
                               href={generateGoogleCalendarUrl(meeting)} 
@@ -1424,16 +1585,36 @@ export default function DashboardPage() {
                           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black opacity-30">MIN</span>
                         </div>
                       </div>
+
+                      {/* Virtual / Presencial toggle */}
                       <div className="space-y-2">
-                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Ubicación</label>
-                        <input 
-                          type="text" 
-                          placeholder="Meet / Zoom"
-                          className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-black text-xs"
-                          value={formData.location}
-                          onChange={(e) => updateMeetingSlot(index, { location: e.target.value })}
-                          disabled={isSyncing}
-                        />
+                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">Tipo</label>
+                        <div className="flex rounded-[1.2rem] overflow-hidden border border-white/10 bg-muted/30">
+                          <button
+                            type="button"
+                            onClick={() => updateMeetingSlot(index, { isVirtual: true, location: "" })}
+                            disabled={isSyncing}
+                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${
+                              formData.isVirtual
+                                ? "bg-accent text-accent-foreground shadow-inner"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <Video size={11} /> Virtual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateMeetingSlot(index, { isVirtual: false })}
+                            disabled={isSyncing}
+                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 ${
+                              !formData.isVirtual
+                                ? "bg-foreground text-background shadow-inner"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <Calendar size={11} /> Presencial
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1448,6 +1629,29 @@ export default function DashboardPage() {
                         disabled={isSyncing}
                       />
                     </div>
+
+                    {/* Location: only shown for presencial meetings */}
+                    {!formData.isVirtual && (
+                      <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                        <label className="text-[10px] uppercase tracking-[0.15em] font-black text-muted-foreground/60 ml-3">📍 Lugar / Dirección</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ej: Café El Pórtico, Calle 50 #30-10..."
+                          className="w-full bg-muted/30 hover:bg-muted/50 px-5 py-3 rounded-[1.2rem] border border-white/10 outline-none focus:ring-4 focus:ring-accent/5 transition-all font-medium text-xs"
+                          value={formData.location}
+                          onChange={(e) => updateMeetingSlot(index, { location: e.target.value })}
+                          disabled={isSyncing}
+                        />
+                      </div>
+                    )}
+
+                    {/* For virtual: show an info note */}
+                    {formData.isVirtual && (
+                      <div className="flex items-center gap-2 text-[10px] text-accent/70 bg-accent/5 px-4 py-2.5 rounded-xl border border-accent/10 animate-in fade-in duration-300">
+                        <Video size={12} />
+                        <span>Google Meet se generará automáticamente al guardar</span>
+                      </div>
+                    )}
 
                     <div className="bg-white/5 p-5 rounded-[1.5rem] border border-white/5 space-y-4">
                       <div className="flex items-center justify-between">
