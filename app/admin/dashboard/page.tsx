@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
@@ -52,20 +52,35 @@ import {
 import Skeleton from "@/components/Skeleton";
 import { incrementDownloadCount } from "@/app/actions/library-actions";
 
-const CountdownTimer = ({ targetDate, reminderLeadTime }: { targetDate: any, reminderLeadTime: number }) => {
+const CountdownTimer = ({
+  targetDate,
+  reminderLeadTime,
+  onComplete
+}: {
+  targetDate: any;
+  reminderLeadTime: number;
+  onComplete?: () => void;
+}) => {
   const [timeLeft, setTimeLeft] = useState<string>("");
   const [isDue, setIsDue] = useState(false);
+  const firedRef = useRef(false);
 
   useEffect(() => {
     const calculateTime = () => {
       const now = new Date().getTime();
-      const meetingDate = targetDate.seconds ? new Date(targetDate.seconds * 1000).getTime() : new Date(targetDate).getTime();
-      const reminderTime = meetingDate - (reminderLeadTime * 60000);
+      const meetingDate = targetDate.seconds
+        ? new Date(targetDate.seconds * 1000).getTime()
+        : new Date(targetDate).getTime();
+      const reminderTime = meetingDate - reminderLeadTime * 60000;
       const difference = reminderTime - now;
 
       if (difference <= 0) {
         setTimeLeft("¡YA!");
         setIsDue(true);
+        if (!firedRef.current && onComplete) {
+          firedRef.current = true;
+          onComplete();
+        }
         return;
       }
 
@@ -84,12 +99,60 @@ const CountdownTimer = ({ targetDate, reminderLeadTime }: { targetDate: any, rem
     const timer = setInterval(calculateTime, 1000);
     calculateTime();
     return () => clearInterval(timer);
-  }, [targetDate, reminderLeadTime]);
+  }, [targetDate, reminderLeadTime, onComplete]);
 
-  return <span className={isDue ? "text-red-400 animate-pulse" : ""}>{timeLeft}</span>;
+  return <span className={isDue ? "text-red-400 animate-pulse font-black" : ""}>{timeLeft}</span>;
 };
 
-// Helper for skeleton rows
+// 4-step progress indicator for reminder sending
+const REMINDER_STEPS = [
+  { label: "Preparando correos", icon: "📋" },
+  { label: "Conectando con el servidor", icon: "🔗" },
+  { label: "Enviando a usuarios", icon: "📨" },
+  { label: "Registrando en base de datos", icon: "✅" },
+];
+
+const ReminderProgress = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentStep(prev => (prev < REMINDER_STEPS.length - 1 ? prev + 1 : prev));
+    }, 1400);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="bg-orange-500/5 border border-orange-500/20 rounded-2xl p-4 space-y-3 animate-in fade-in zoom-in-95 duration-300">
+      <p className="text-[9px] font-black uppercase tracking-widest text-orange-500/80 flex items-center gap-1.5">
+        <Loader2 size={10} className="animate-spin" /> Enviando recordatorio...
+      </p>
+      <div className="space-y-2">
+        {REMINDER_STEPS.map((step, i) => {
+          const isDone = i < currentStep;
+          const isActive = i === currentStep;
+          return (
+            <div key={i} className={`flex items-center gap-2.5 text-[9px] font-bold transition-all duration-500 ${
+              isDone ? 'text-emerald-500' : isActive ? 'text-orange-400' : 'text-muted-foreground/30'
+            }`}>
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[8px] border transition-all duration-500 ${
+                isDone
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-500'
+                  : isActive
+                    ? 'bg-orange-500/20 border-orange-500/40 text-orange-400'
+                    : 'bg-muted/10 border-muted/20'
+              }`}>
+                {isDone ? '✓' : isActive ? <Loader2 size={8} className="animate-spin" /> : (i + 1)}
+              </div>
+              <span className={isActive ? 'animate-pulse' : ''}>{step.label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const TableSkeleton = ({ rows = 5, cols = 3 }: { rows?: number, cols?: number }) => (
   <div className="w-full animate-in fade-in duration-300">
     {[...Array(rows)].map((_, i) => (
@@ -175,6 +238,8 @@ export default function DashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
   const [sendingMeetingId, setSendingMeetingId] = useState<string | null>(null);
+  const [dueMeetingIds, setDueMeetingIds] = useState<Set<string>>(new Set());
+
 
   // Modal States
   const [isBanModalOpen, setIsBanModalOpen] = useState(false);
@@ -1414,14 +1479,31 @@ export default function DashboardPage() {
                               {meeting.autoReminder && (
                                 <div className="space-y-3">
                                   {meeting.reminderSent ? (
-                                    <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all bg-emerald-500/20 text-emerald-500 border-emerald-500/30 shadow-sm shadow-emerald-500/10">
+                                    <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-xl border bg-emerald-500/20 text-emerald-500 border-emerald-500/30 shadow-sm shadow-emerald-500/10">
                                       <Check size={14} strokeWidth={3} />
                                       RECORDATORIO ENVIADO
                                     </div>
+                                  ) : (sendingMeetingId === meeting.id || dueMeetingIds.has(meeting.id)) ? (
+                                    <ReminderProgress />
                                   ) : (
-                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl border transition-all bg-orange-500/10 text-orange-500 border-orange-500/30">
+                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-xl border bg-orange-500/10 text-orange-500 border-orange-500/30">
                                       <Bell size={14} className="animate-bounce" strokeWidth={3} />
-                                      <span>ENVÍO EN: <CountdownTimer targetDate={meeting.date} reminderLeadTime={meeting.reminderLeadTime || 60} /></span>
+                                      <span>ENVíO EN: <CountdownTimer
+                                        targetDate={meeting.date}
+                                        reminderLeadTime={meeting.reminderLeadTime || 60}
+                                        onComplete={() => {
+                                          if (!meeting.reminderSent && sendingMeetingId !== meeting.id) {
+                                            setDueMeetingIds(prev => new Set(prev).add(meeting.id));
+                                            handleManualReminder(meeting).finally(() => {
+                                              setDueMeetingIds(prev => {
+                                                const next = new Set(prev);
+                                                next.delete(meeting.id);
+                                                return next;
+                                              });
+                                            });
+                                          }
+                                        }}
+                                      /></span>
                                     </div>
                                   )}
                                 </div>
@@ -1430,31 +1512,24 @@ export default function DashboardPage() {
                           </div>
 
                           <div className="flex flex-row md:flex-col gap-2 justify-end">
-                            {meeting.autoReminder && !meeting.reminderSent && (
-                              <div className="relative">
-                                <button 
-                                  onClick={() => handleManualReminder(meeting)}
-                                  disabled={sendingMeetingId === meeting.id}
-                                  className="bg-foreground text-background p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 text-[10px] font-black disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
-                                >
-                                  {sendingMeetingId === meeting.id ? (
-                                    <Loader2 size={14} className="animate-spin" />
-                                  ) : (
-                                    <Send size={14} />
-                                  )}
-                                  {sendingMeetingId === meeting.id ? "ENVIANDO..." : "ENVIAR AHORA"}
-                                </button>
-                                {/* Tooltip appears ABOVE the button */}
-                                {sendingMeetingId === meeting.id && (
-                                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-card border border-border/60 text-foreground text-[10px] px-3 py-2 rounded-xl shadow-2xl whitespace-nowrap z-50 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <div className="flex items-center gap-1.5">
-                                      <Loader2 size={10} className="animate-spin text-accent" />
-                                      Esto puede tardar... ¡no se rompió nada!
-                                    </div>
-                                    {/* Arrow pointing down */}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border/60" />
-                                  </div>
-                                )}
+                            {/* Show button only when not sending and countdown not yet due */}
+                            {meeting.autoReminder && !meeting.reminderSent &&
+                             sendingMeetingId !== meeting.id &&
+                             !dueMeetingIds.has(meeting.id) && (
+                              <button 
+                                onClick={() => handleManualReminder(meeting)}
+                                className="bg-foreground text-background p-3 rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 text-[10px] font-black min-w-[120px]"
+                              >
+                                <Send size={14} />
+                                ENVIAR AHORA
+                              </button>
+                            )}
+
+                            {/* When sending, show compact spinner next to calendar button */}
+                            {(sendingMeetingId === meeting.id || dueMeetingIds.has(meeting.id)) && (
+                              <div className="flex items-center gap-2 text-[10px] text-orange-400 font-bold px-0 py-1">
+                                <Loader2 size={12} className="animate-spin" />
+                                <span>Procesando...</span>
                               </div>
                             )}
                             <a 
