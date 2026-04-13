@@ -12,12 +12,11 @@ import { getDriveVideoTitle } from '@/app/actions/unincca-actions';
 export default function UninccaPage() {
   const [videos, setVideos] = React.useState([
     {
-      id: "1sKpezKbhh_FtvePaWtPll3G6a5zeIYjV",
+      id: "1o6DV-HEvIoPj_uXMXEVl6HeF6FCAdBaW",
       title: "", // Will be fetched
-      url: "https://drive.google.com/file/d/1sKpezKbhh_FtvePaWtPll3G6a5zeIYjV/preview",
+      url: "https://drive.google.com/file/d/1o6DV-HEvIoPj_uXMXEVl6HeF6FCAdBaW/preview",
       thumbnail: "/unincca.jpg"
-    },
-    // Puedes añadir más videos aquí
+    }
   ]);
 
   React.useEffect(() => {
@@ -107,9 +106,9 @@ function VideoCard({ video }: { video: any }) {
       <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-border bg-black/10 backdrop-blur-sm shadow-lg group-hover:shadow-accent/10 transition-all duration-500">
         {isPlaying ? (
           <iframe
-            src={`${video.url}${video.url.includes('?') ? '&' : '?'}autoplay=1`}
+            src={video.url}
             className="w-full h-full border-0"
-            allow="autoplay; encrypted-media"
+            allow="encrypted-media"
             allowFullScreen
             title={video.title || "Cargando..."}
           />
@@ -143,7 +142,18 @@ function VideoCard({ video }: { video: any }) {
             <div className="h-4 w-3/4 bg-muted/20 animate-pulse rounded-full" />
           )}
         </div>
-        <p className="text-xs text-muted-foreground">Material de apoyo / Entrega</p>
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-accent/10">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Material de apoyo</p>
+          <a 
+            href={`https://drive.google.com/file/d/${video.id}/view?usp=sharing`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[10px] font-bold uppercase tracking-widest text-accent hover:text-accent/80 transition-colors flex items-center gap-1.5"
+          >
+            Ver en Drive
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+        </div>
       </div>
     </motion.div>
   );
