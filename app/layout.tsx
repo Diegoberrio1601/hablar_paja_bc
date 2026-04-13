@@ -25,6 +25,10 @@ export const metadata: Metadata = {
   description: "Un espacio para los que aman los libros, la paja y no tienen miedo de decir lo que piensan. Reseñas, recomendaciones y club de lectura.",
   keywords: ["libros", "reseñas", "club de lectura", "literatura", "hablar paja", "blog literario"],
   authors: [{ name: "Hablar Paja BC team" }],
+  icons: {
+    icon: '/hpl.png',
+    apple: '/hpl.png',
+  },
   openGraph: {
     title: "Hablar Paja BC | Club de Lectura",
     description: "Un espacio para los que aman los libros, la paja y no tienen miedo de decir lo que piensan.",
@@ -34,9 +38,9 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image.png', // Necesitarás subir esta imagen o la generaremos
-        width: 1200,
-        height: 630,
+        url: '/hpl.png',
+        width: 800,
+        height: 800,
         alt: 'Hablar Paja BC - Club de Lectura',
       },
     ],
@@ -45,7 +49,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "Hablar Paja BC",
     description: "Reseñas de libros y club de lectura.",
-    images: ['/og-image.png'],
+    images: ['/hpl.png'],
   },
   robots: {
     index: true,

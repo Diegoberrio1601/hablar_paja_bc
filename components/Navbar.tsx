@@ -105,6 +105,10 @@ function Navbar() {
             El Club
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
           </Link>
+          <Link href="/unincca" className="text-xs font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
+            Unincca
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
+          </Link>
         </nav>
 
 
@@ -234,6 +238,13 @@ function Navbar() {
                     className="text-lg font-bold uppercase tracking-widest hover:text-accent transition-colors border-b border-border/50 pb-2"
                   >
                     El Club
+                  </Link>
+                  <Link 
+                    href="/unincca" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="text-lg font-bold uppercase tracking-widest hover:text-accent transition-colors border-b border-border/50 pb-2"
+                  >
+                    Unincca
                   </Link>
                   
                   {user && isAdmin && (

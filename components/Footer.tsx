@@ -101,6 +101,10 @@ function Footer() {
             El Club
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
           </Link>
+          <Link href="/unincca" className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
+            Unincca
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
+          </Link>
         </nav>
       </div>
 
