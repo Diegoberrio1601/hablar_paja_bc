@@ -1,13 +1,13 @@
 "use client";
 
-import React from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { motion } from 'framer-motion';
-import { Play } from 'lucide-react';
-import Image from 'next/image';
+import React from "react";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
+import { motion } from "framer-motion";
+import { Play } from "lucide-react";
+import Image from "next/image";
 
-import { getDriveVideoTitle } from '@/app/actions/unincca-actions';
+import { getDriveVideoTitle } from "@/app/actions/unincca-actions";
 
 export default function UninccaPage() {
   const [videos, setVideos] = React.useState([
@@ -15,8 +15,14 @@ export default function UninccaPage() {
       id: "1o6DV-HEvIoPj_uXMXEVl6HeF6FCAdBaW",
       title: "", // Will be fetched
       url: "https://drive.google.com/file/d/1o6DV-HEvIoPj_uXMXEVl6HeF6FCAdBaW/preview",
-      thumbnail: "/unincca.jpg"
-    }
+      thumbnail: "/unincca.jpg",
+    },
+    {
+      id: "1MXLLJTelYDMLbSkxi5khpE37bX5oG6J_",
+      title: "", // Will be fetched
+      url: "https://drive.google.com/file/d/1MXLLJTelYDMLbSkxi5khpE37bX5oG6J_/preview",
+      thumbnail: "/unincca.jpg",
+    },
   ]);
 
   React.useEffect(() => {
@@ -28,7 +34,7 @@ export default function UninccaPage() {
             return { ...v, title };
           }
           return v;
-        })
+        }),
       );
       setVideos(updatedVideos);
     }
@@ -42,9 +48,9 @@ export default function UninccaPage() {
       {/* Hero Section */}
       <section className="pt-40 pb-16 px-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1/3 h-full bg-accent/5 skew-x-12 -z-10 blur-3xl opacity-50" />
-        
+
         <div className="max-w-7xl mx-auto">
-          <motion.div 
+          <motion.div
             className="flex flex-col md:flex-row gap-8 items-end justify-between"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -55,15 +61,21 @@ export default function UninccaPage() {
                 <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                   <Play size={20} fill="currentColor" />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-[0.3em] text-accent/60">Gestión Académica</span>
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-accent/60">
+                  Gestión Académica
+                </span>
               </div>
 
               <div className="space-y-2">
                 <h1 className="text-4xl md:text-6xl font-black serif tracking-tight">
-                  Entregas <span className="text-accent underline decoration-accent/20">Unincca</span>
+                  Entregas{" "}
+                  <span className="text-accent underline decoration-accent/20">
+                    Unincca
+                  </span>
                 </h1>
                 <p className="text-lg md:text-xl font-medium text-muted-foreground max-w-xl">
-                  Archivo temporal de proyectos, tareas y material audiovisual universitario.
+                  Archivo temporal de proyectos, tareas y material audiovisual
+                  universitario.
                 </p>
               </div>
             </div>
@@ -78,11 +90,13 @@ export default function UninccaPage() {
             {videos.map((video) => (
               <VideoCard key={video.id} video={video} />
             ))}
-            
+
             {/* Placeholder for more videos if desired */}
             <div className="aspect-video w-full rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground/40 p-8 grayscale">
-               <Play size={24} />
-               <span className="text-[10px] font-bold uppercase tracking-widest">Espacio para más tareas</span>
+              <Play size={24} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                Espacio para más tareas
+              </span>
             </div>
           </div>
         </div>
@@ -97,7 +111,7 @@ function VideoCard({ video }: { video: any }) {
   const [isPlaying, setIsPlaying] = React.useState(false);
 
   return (
-    <motion.div 
+    <motion.div
       className="group relative flex flex-col gap-4"
       initial={{ opacity: 0, scale: 0.95 }}
       whileInView={{ opacity: 1, scale: 1 }}
@@ -113,12 +127,12 @@ function VideoCard({ video }: { video: any }) {
             title={video.title || "Cargando..."}
           />
         ) : (
-          <div 
+          <div
             onClick={() => setIsPlaying(true)}
             className="relative w-full h-full cursor-pointer group"
           >
-            <Image 
-              src={video.thumbnail} 
+            <Image
+              src={video.thumbnail}
               alt={video.title || "Cargando..."}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-105"
@@ -143,15 +157,30 @@ function VideoCard({ video }: { video: any }) {
           )}
         </div>
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-accent/10">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Material de apoyo</p>
-          <a 
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Material de apoyo
+          </p>
+          <a
             href={`https://drive.google.com/file/d/${video.id}/view?usp=sharing`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[10px] font-bold uppercase tracking-widest text-accent hover:text-accent/80 transition-colors flex items-center gap-1.5"
           >
             Ver en Drive
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
           </a>
         </div>
       </div>
