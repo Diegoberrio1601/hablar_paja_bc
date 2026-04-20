@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
 import Skeleton from "@/components/Skeleton";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface FeaturedPost {
   id: string;
@@ -37,17 +38,29 @@ export default function FeaturedSlider() {
           day: '2-digit', month: 'long', year: 'numeric' 
         }) || "Recién publicado"
       })) as FeaturedPost[];
-      setPosts(featuredData);
+
+      // Randomizar el orden de los posts para que sea dinámico
+      const shuffledData = [...featuredData].sort(() => Math.random() - 0.5);
+      
+      setPosts(shuffledData);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % posts.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length);
+  };
+
   useEffect(() => {
     if (posts.length <= 1) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % posts.length);
+      nextSlide();
     }, 6000);
     return () => clearInterval(interval);
   }, [posts.length]);
@@ -147,6 +160,26 @@ export default function FeaturedSlider() {
             />
           </div>
         </div>
+
+        {/* Navigation Arrows */}
+        {posts.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 opacity-0 group-hover:opacity-100 z-10 shadow-lg"
+              aria-label="Anterior"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-background/20 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-300 opacity-0 group-hover:opacity-100 z-10 shadow-lg"
+              aria-label="Siguiente"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </>
+        )}
 
         {/* Indicators */}
         {posts.length > 1 && (

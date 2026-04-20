@@ -32,7 +32,7 @@ function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass px-6 py-4 [transform:translateZ(0)]">
-      <div className="max-w-7xl mx-auto items-center grid grid-cols-3 gap-8 lg:gap-12">
+      <div className="max-w-7xl mx-auto flex items-center justify-between md:grid md:grid-cols-3 gap-4 md:gap-8 lg:gap-12">
         <div className="flex items-center gap-6 justify-self-start">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-10 h-10 md:w-12 md:h-12 overflow-hidden rounded-xl bg-accent/5 p-1 border border-border group-hover:border-accent/30 transition-all duration-500">
@@ -45,7 +45,7 @@ function Navbar() {
                 priority
               />
             </div>
-            <span className="text-xl md:text-2xl font-bold tracking-tight serif">
+            <span className="text-base sm:text-lg md:text-2xl font-bold tracking-tight serif whitespace-nowrap">
               Hablar Paja <span className="text-muted-foreground">BC</span>
             </span>
           </Link>
@@ -181,14 +181,16 @@ function Navbar() {
             </button>
           )}
 
-          {/* Mobile Menu Button - Moved here */}
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 text-foreground/70 hover:text-foreground transition-colors z-[70]"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile Menu Button */}
+          {!isMobileMenuOpen && (
+            <button 
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="md:hidden p-2 text-foreground/70 hover:text-foreground transition-colors z-[70]"
+              aria-label="Open menu"
+            >
+              <Menu size={24} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -211,11 +213,18 @@ function Navbar() {
               className="fixed right-0 top-0 bottom-0 w-[80%] max-w-[320px] bg-background border-l border-border z-[60] md:hidden shadow-2xl overflow-y-auto h-screen h-[100dvh] will-change-transform [-webkit-overflow-scrolling:touch]"
             >
               <div className="flex flex-col h-full p-6">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-8 pb-4 border-b border-border/50">
                   <div className="flex items-center gap-2">
                     <Image src="/hpl.png" alt="Logo" width={24} height={24} />
-                    <span className="font-bold tracking-tight serif text-lg">Hablar Paja <span className="text-muted-foreground">BC</span></span>
+                    <span className="font-bold tracking-tight serif text-base">Hablar Paja <span className="text-muted-foreground">BC</span></span>
                   </div>
+                  <button 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2 text-foreground/70 hover:text-foreground transition-colors"
+                    aria-label="Close menu"
+                  >
+                    <X size={24} />
+                  </button>
                 </div>
 
                 <nav className="flex flex-col gap-6 mb-10">
@@ -295,11 +304,11 @@ function Navbar() {
                     <ThemeToggle />
                   </div>
 
-                  <div className="flex items-center justify-around p-4 bg-muted/30 rounded-2xl">
-                    <a href="https://www.youtube.com/@hablarpajabc05" target="_blank" className="text-[#FF0000] hover:scale-110 transition-transform"><BrandIcons.YouTube /></a>
-                    <a href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" target="_blank" className="text-[#1DB954] hover:scale-110 transition-transform"><BrandIcons.Spotify /></a>
-                    <a href="https://www.instagram.com/hablarpajabc/" target="_blank" className="text-[#E4405F] hover:scale-110 transition-transform"><BrandIcons.Instagram /></a>
-                    <a href="https://www.tiktok.com/@hablarpajabc" target="_blank" className="text-foreground hover:scale-110 transition-transform"><BrandIcons.TikTok /></a>
+                  <div className="grid grid-cols-4 gap-4 p-4 bg-muted/30 rounded-2xl">
+                    <a href="https://www.youtube.com/@hablarpajabc05" target="_blank" className="flex justify-center text-[#FF0000] hover:scale-110 transition-transform"><BrandIcons.YouTube /></a>
+                    <a href="https://open.spotify.com/show/6LmAr5N4dbJst2AoZamjKQ?si=b2624cca2285419e" target="_blank" className="flex justify-center text-[#1DB954] hover:scale-110 transition-transform"><BrandIcons.Spotify /></a>
+                    <a href="https://www.instagram.com/hablarpajabc/" target="_blank" className="flex justify-center text-[#E4405F] hover:scale-110 transition-transform"><BrandIcons.Instagram /></a>
+                    <a href="https://www.tiktok.com/@hablarpajabc" target="_blank" className="flex justify-center text-foreground hover:scale-110 transition-transform"><BrandIcons.TikTok /></a>
                   </div>
 
                   <a 
