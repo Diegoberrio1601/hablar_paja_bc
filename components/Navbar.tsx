@@ -32,8 +32,8 @@ function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass px-6 py-4 [transform:translateZ(0)]">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-8">
+      <div className="max-w-7xl mx-auto items-center grid grid-cols-3 gap-8 lg:gap-12">
+        <div className="flex items-center gap-6 justify-self-start">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-10 h-10 md:w-12 md:h-12 overflow-hidden rounded-xl bg-accent/5 p-1 border border-border group-hover:border-accent/30 transition-all duration-500">
               <Image 
@@ -51,7 +51,7 @@ function Navbar() {
           </Link>
           
           {/* Social Links - Desktop */}
-          <div className="hidden lg:flex items-center gap-4 pl-4 border-l border-border">
+          <div className="hidden xl:flex items-center gap-3 pl-4 border-l border-border flex-shrink-0">
             {mounted && (
               <>
                 <a 
@@ -92,7 +92,7 @@ function Navbar() {
         </div>
 
         {/* Central Navigation - Desktop */}
-        <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+        <nav className="hidden md:flex items-center gap-4 lg:gap-8 justify-self-center whitespace-nowrap">
           <Link href="/" className="text-xs font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
             Inicio
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
@@ -102,7 +102,7 @@ function Navbar() {
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
           </Link>
           <Link href="/club" className="text-xs font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
-            El Club
+            Quiero ser Pajeritex
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
           </Link>
           <Link href="/unincca" className="text-xs font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
@@ -112,7 +112,8 @@ function Navbar() {
         </nav>
 
 
-        <div className="flex items-center gap-2 md:gap-4">
+
+        <div className="flex items-center gap-2 md:gap-4 justify-self-end">
           <div className="hidden md:block">
             <ThemeToggle />
           </div>
@@ -237,7 +238,7 @@ function Navbar() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="text-lg font-bold uppercase tracking-widest hover:text-accent transition-colors border-b border-border/50 pb-2"
                   >
-                    El Club
+                    Quiero ser Pajeritex
                   </Link>
                   <Link 
                     href="/unincca" 
@@ -307,7 +308,7 @@ function Navbar() {
                     className="flex items-center justify-center gap-3 w-full bg-[#25D366] text-white font-bold uppercase tracking-widest py-4 rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <WhatsAppIcon size={20} />
-                    Unirme al Club
+                    Hacerme Pajeritex
                   </a>
                 </div>
               </div>

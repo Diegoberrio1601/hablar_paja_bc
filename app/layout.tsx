@@ -19,19 +19,19 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   metadataBase: new URL('https://hablarpajabc.vercel.app'),
   title: {
-    default: "Hablar Paja BC | Club de Lectura",
+    default: "Hablar Paja BC | Quiero ser Pajeritex",
     template: "%s | Hablar Paja BC"
   },
-  description: "Un espacio para los que aman los libros, la paja y no tienen miedo de decir lo que piensan. Reseñas, recomendaciones y club de lectura.",
-  keywords: ["libros", "reseñas", "club de lectura", "literatura", "hablar paja", "blog literario"],
+  description: "Un espacio para los que aman los libros, la paja literaria y no tienen miedo de decir lo que piensan.",
+  keywords: ["libros", "reseñas", "pajeridex", "literatura", "hablar paja", "pajita literaria"],
   authors: [{ name: "Hablar Paja BC team" }],
   icons: {
     icon: '/hpl.png',
     apple: '/hpl.png',
   },
   openGraph: {
-    title: "Hablar Paja BC | Club de Lectura",
-    description: "Un espacio para los que aman los libros, la paja y no tienen miedo de decir lo que piensan.",
+    title: "Hablar Paja BC | Quiero ser Pajeritex",
+    description: "Un espacio para los que aman los libros, la paja literaria y no tienen miedo de decir lo que piensan.",
     url: 'https://hablarpajabc.vercel.app',
     siteName: 'Hablar Paja BC',
     locale: 'es_ES',
@@ -41,14 +41,14 @@ export const metadata: Metadata = {
         url: '/hpl.png',
         width: 800,
         height: 800,
-        alt: 'Hablar Paja BC - Club de Lectura',
+        alt: 'Hablar Paja BC - Quiero ser Pajeritex',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
     title: "Hablar Paja BC",
-    description: "Reseñas de libros y club de lectura.",
+    description: "Reseñas de libros y paja literaria.",
     images: ['/hpl.png'],
   },
   robots: {

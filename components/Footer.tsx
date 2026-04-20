@@ -68,10 +68,10 @@ function Footer() {
 
         {/* The Club Section */}
         <div className="flex flex-col md:items-end">
-          <h4 className="font-bold mb-8 text-xs uppercase tracking-widest text-foreground md:text-right">El Club</h4>
+          <h4 className="font-bold mb-8 text-xs uppercase tracking-widest text-foreground md:text-right">Quiero ser Pajeritex</h4>
           <p className="text-muted-foreground text-sm leading-relaxed mb-6 md:text-right md:max-w-xs ml-auto">
-            Lecturas compartidas. Debates en vivo. Podcast donde la paja se escucha sin filtro.<br />
-            Porque cuando un libro está bueno siempre provoca hablar paja un rato más. 📚😏
+            Hacemos la pajita grupal una vez al mes. Podcast donde las ideas se corren sin filtro. 
+            Porque si la lectura está buena, ¿para qué guardársela? 📚😏
           </p>
           <motion.a 
             href="https://chat.whatsapp.com/G99jS3ldw8pBwmZ3VD56Ah?mode=gi_t"
@@ -98,7 +98,7 @@ function Footer() {
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
           </Link>
           <Link href="/club" className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">
-            El Club
+            Quiero ser Pajeritex
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all group-hover:w-full"></span>
           </Link>
           <Link href="/unincca" className="text-[10px] font-bold uppercase tracking-[0.2em] hover:text-accent transition-colors relative group">

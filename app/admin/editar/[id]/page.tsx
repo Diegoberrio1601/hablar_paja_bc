@@ -120,7 +120,7 @@ export default function EditarPage() {
       "Libros": `Escribe una reseña profunda y cautivadora del libro "${title}" de ${bookAuthor}. Incluye un resumen sin spoilers, análisis de temas y por qué vale la pena leerlo.`,
       "Autores": `Escribe un perfil literario detallado del autor ${bookAuthor}, enfocándote en su estilo, legado y mencionando su obra destacada "${title}".`,
       "Recomendaciones": `Escribe una recomendación entusiasta para leer "${title}" de ${bookAuthor}. Explica a qué tipo de lectores les gustaría y qué lo hace especial.`,
-      "Libro del Mes": `Escribe el anuncio oficial para el Libro del Mes de ${month}: "${title}" de ${bookAuthor}. Debe ser una invitación irresistible para que el club de lectura empiece a leerlo.`
+      "Libro del Mes": `Escribe el anuncio oficial para el Libro del Mes de ${month}: "${title}" de ${bookAuthor}. Debe ser una invitación irresistible para que l@s pajer@s empiecen a leerlo y se preparen para la pajita literaria.`
     };
 
     return `${base}${prompts[category] || prompts["Libros"]} Usa un tono cercano, elegante y profesional. Devuélveme el contenido en formato Markdown con subtítulos y negritas.`;

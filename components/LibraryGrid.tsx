@@ -127,7 +127,7 @@ export default function LibraryGrid() {
       <div className="relative max-w-md mx-auto group">
         <input 
           type="text" 
-          placeholder="Buscar libro o autor..." 
+          placeholder="¿Qué te quieres manosear hoy?..." 
           className="w-full bg-muted/10 border border-border px-12 py-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/20 transition-all font-medium text-sm"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}

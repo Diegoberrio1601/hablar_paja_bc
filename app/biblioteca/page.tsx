@@ -15,7 +15,7 @@ export default function BibliotecaPage() {
 
       
       {/* Hero Section */}
-      <section className="pt-40 pb-24 px-6 relative overflow-hidden">
+      <section className="pt-28 pb-10 px-6 relative overflow-hidden">
         {/* Background Decorative Element */}
         <div className="absolute top-0 right-0 w-1/3 h-full bg-accent/5 -skew-x-12 -z-10 blur-3xl opacity-50" />
         
@@ -26,29 +26,29 @@ export default function BibliotecaPage() {
             animate={{ opacity: 1 }}
           >
             {/* Left Column: Title and Intro */}
-            <div className="lg:col-span-7 space-y-8">
+            <div className="lg:col-span-7 space-y-4">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent">
                   <BookOpen size={24} />
                 </div>
-                <span className="text-xs font-bold uppercase tracking-[0.3em] text-accent/60">Santuario Digital</span>
+                <span className="text-xs font-bold uppercase tracking-[0.3em] text-accent/60">Zona de Descargas</span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <motion.h1 
-                  className="text-5xl md:text-6xl font-black serif tracking-tight leading-[0.9]"
+                  className="text-4xl md:text-5xl font-black serif tracking-tight leading-[0.9]"
                   animate={{ 
                     color: ["#25D366", "#FF0000", "#FF7F00", "#8F00FF", "#25D366"],
                   }}
                   transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                 >
-                  La Zona <br /> <span className="opacity-90">de la Pajita</span>
+                  Date una buena Pajita
                 </motion.h1>
                 <div className="h-1.5 w-24 bg-accent/30 rounded-full" />
               </div>
 
-              <p className="text-xl md:text-2xl font-bold leading-tight max-w-lg text-foreground/90">
-                Un santuario digital donde la paja fluye para <span className="text-accent italic underline decoration-accent/30 underline-offset-4">todes, todas y todos.</span>
+              <p className="text-lg md:text-xl font-bold leading-tight max-w-lg text-foreground/90">
+                Un rincón sin censura donde te lo puedes llevar todo gratis. Sin anuncios que te corten la nota, solo <span className="text-accent italic underline decoration-accent/30 underline-offset-4">puro placer literario.</span>
               </p>
             </div>
 
@@ -58,7 +58,7 @@ export default function BibliotecaPage() {
                 <div className="absolute -top-3 -left-3 w-10 h-10 bg-accent rounded-xl flex items-center justify-center text-white font-black text-lg rotate-12">!</div>
                 
                 <p className="text-base font-medium leading-relaxed text-muted-foreground">
-                  Explora nuestra colección curada y prepárate para una experiencia literaria que te va a <span className="text-foreground font-bold italic">apretar la cabeza</span>. Sin prisas, sin filtros, solo el placer de leer.
+                  Nuestra colección está abierta y lista para que la explores a fondo. Olvídate de la publicidad molesta; aquí vienes a lo que vienes: a llevártelo todo a la cama. Una estimulación mental sin interrupciones, diseñada para que te <span className="text-foreground font-bold italic">vengas arriba</span> con cada página.
                 </p>
                 
                 <div className="mt-6 pt-6 border-t border-border flex items-center gap-4">
@@ -67,7 +67,7 @@ export default function BibliotecaPage() {
                       <div key={i} className="w-6 h-6 rounded-full border-2 border-background bg-accent/10" />
                     ))}
                   </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Aquí el ritmo lo pones tú.</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Descárgalo rápido, gózalo despacio.</p>
                 </div>
               </div>
             </div>

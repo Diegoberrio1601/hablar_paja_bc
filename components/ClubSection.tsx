@@ -11,16 +11,16 @@ export default function ClubSection() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto space-y-12">
           <div className="space-y-8">
-            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em]">ÚNETE A LA PAJITA</span>
+            <span className="text-accent text-xs font-bold uppercase tracking-[0.2em]">QUIERO SER PAJERITEX</span>
             <h2 className="text-4xl md:text-7xl font-bold serif leading-tight">
               Hablar Paja BC <br />
-              <span className="text-muted-foreground italic text-3xl md:text-4xl block mt-2">Donde los libros te aprietan la cabeza… y las ideas se corren.</span>
+              <span className="text-muted-foreground italic text-3xl md:text-4xl block mt-2">Para que los libros te mojen... la imaginación.</span>
             </h2>
             <div className="text-muted-foreground text-lg md:text-xl leading-relaxed mx-auto max-w-2xl space-y-4 font-medium">
-              <p>Somos una comunidad donde las historias no solo se leen. Se saborean, se comentan y se disfrutan sin prisa.</p>
-              <p>Aquí nos gusta hablar paja sin pena, dejar que los libros nos lleven… y cuando una historia está buena, darle otra vuelta más.</p>
+              <p>No leemos por las fotos. Leemos porque nos gusta terminar empapados de una buena historia.</p>
+              <p>Aquí la paja se habla de frente y sin tabúes. Si una lectura te pone a volar, ¿por qué no darle otra vuelta juntos?</p>
               <p className="text-foreground italic">
-                Si eres de quienes disfrutan una buena pajita literaria, de esas que empiezan suave… pero terminan explotándote la cabeza, entonces este es tu lugar.
+                Si disfrutas de una buena pajita literaria —de esas que empiezan suave pero terminan explotándote la cabeza—, este es tu sitio.
               </p>
             </div>
             
@@ -29,9 +29,9 @@ export default function ClubSection() {
                 <div className="w-16 h-16 rounded-2xl bg-background border border-border flex items-center justify-center text-accent mx-auto">
                   <Users size={32} />
                 </div>
-                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">COMUNIDAD</h4>
+                <h4 className="font-bold text-sm uppercase tracking-widest text-foreground">EN EL ACTO</h4>
                 <p className="text-xs text-muted-foreground leading-relaxed px-4">
-                  Cada mes nos reunimos para hacer la pajita juntos. Leemos el mismo libro, lo comentamos y dejamos que la conversación se ponga intensa.
+                  Cada mes nos reunimos para hacer la pajita grupal. Mano a mano, dejamos que la conversación suba de nivel.
                 </p>
               </div>
               <div className="space-y-4">
@@ -72,7 +72,7 @@ export default function ClubSection() {
                 whileTap={{ scale: 0.95 }}
               >
                 <WhatsAppIcon />
-                <span>Quiero unirme ahora</span>
+                <span>Hacerme Pajeritex</span>
               </motion.a>
             </motion.div>
           </div>
